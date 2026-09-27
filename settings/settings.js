@@ -845,6 +845,16 @@ class ThinkingPromptSettings {
 
     /**
      * @param {number} id
+     * @param {string} name
+     * @return {boolean}
+     */
+    hasAnotherName(id, name) {
+        const normalizedName = name.trim();
+        return this.#settings.some(setting => setting.id !== id && setting.name.trim() === normalizedName);
+    }
+
+    /**
+     * @param {number} id
      * @return {void}
      */
     remove(id) {
@@ -986,6 +996,12 @@ class ThinkingPromptList {
             const id = Number(event.target.getAttribute('data-id'));
             const value = event.target.checked;
 
+            if (value && this.#promptSettings.hasAnotherName(id, this.#promptSettings.getSettingBy(id).name)) {
+                event.target.checked = false;
+                toastr.warning('Prompt category names must be unique.', 'Stepped Thinking');
+                return;
+            }
+
             this.#promptSettings.updateIsEnabled(id, value);
 
             saveSettingsDebounced();
@@ -999,6 +1015,12 @@ class ThinkingPromptList {
         return (event) => {
             const id = Number(event.target.getAttribute('data-id'));
             const value = event.target.value;
+
+            if (this.#promptSettings.hasAnotherName(id, value)) {
+                event.target.value = this.#promptSettings.getSettingBy(id).name;
+                toastr.warning('Prompt category names must be unique.', 'Stepped Thinking');
+                return;
+            }
 
             this.#promptSettings.updateName(id, value);
 

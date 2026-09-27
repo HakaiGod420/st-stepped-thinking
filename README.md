@@ -11,10 +11,11 @@ prompt generation. This increases the overall waiting time for a response in fav
 
 #### Thought Generation
 1. An arbitrary number of user-defined prompts to generate a character’s thoughts before regular generation.
-2. Configuring how many of the last character’s thoughts are included in a prompt.
-3. Regenerating specific generated thoughts when necessary.
-4. Removing extra symbols from thoughts using a customizable regular expression.
-5. Hiding thoughts behind a spoiler to create intrigue, if desired.
+2. All enabled thinking categories are generated with one API request and returned as a strict JSON object keyed by category name.
+3. Configuring how many of the last character’s thoughts are included in a prompt.
+4. Regenerating specific generated thoughts when necessary.
+5. Removing extra symbols from thoughts using a customizable regular expression.
+6. Hiding thoughts behind a spoiler to create intrigue, if desired.
 
 #### Character-Specific Settings
 1. Assigning custom prompt sets to specific characters.
@@ -95,6 +96,14 @@ Set it to 0 to use all chat messages.
 
 `Reset to defaults` restores every Stepped Thinking setting, including character-specific settings and custom prompts.
 This action requires confirmation.
+
+Enabled thinking prompt names must be unique. They are used as JSON keys for the single combined request. The model must
+return only an object containing exactly those names, with a non-empty string value for each category. If the response is
+not valid JSON or does not match the configured categories, the generation is stopped and the error is shown instead of
+assigning a result to the wrong category. The existing minimum thought-length setting still causes the combined request
+to be repeated when any category is too short.
+
+The settings and thought controls reflow for phone, tablet, and desktop widths.
 
 ### Slash commands
 

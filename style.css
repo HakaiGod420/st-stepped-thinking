@@ -117,3 +117,82 @@ body.bubblechat .unbound_thoughts {
     background-color: rgba(0, 255, 0, 0.1);
     background-blend-mode: multiply;
 }
+
+#stepthink_settings .flex-container,
+[id^="stepthink_character_settings--"] .flex-container {
+    min-width: 0;
+}
+
+#stepthink_settings textarea,
+#stepthink_settings input,
+[id^="stepthink_character_settings--"] textarea,
+[id^="stepthink_character_settings--"] input {
+    max-width: 100%;
+}
+
+@media (max-width: 700px) {
+    #stepthink_settings .inline-drawer-content,
+    [id^="stepthink_character_settings--"] {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    #stepthink_settings .flex-container,
+    [id^="stepthink_character_settings--"] .flex-container {
+        flex-wrap: wrap;
+        row-gap: 6px;
+    }
+
+    #stepthink_settings .flex-container > label,
+    #stepthink_settings .flex-container > span,
+    [id^="stepthink_character_settings--"] .flex-container > label,
+    [id^="stepthink_character_settings--"] .flex-container > span {
+        max-width: 100%;
+    }
+
+    #stepthink_settings .thinking_prompt_container,
+    [id^="stepthink_character_settings--"] .thinking_prompt_container {
+        flex-basis: calc(100% - 42px);
+    }
+
+    #stepthink_settings .thinking_prompt_container .flexFlowRow,
+    [id^="stepthink_character_settings--"] .thinking_prompt_container .flexFlowRow {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    #stepthink_settings .thinking_prompt_container input,
+    #stepthink_settings .thinking_prompt_container textarea,
+    [id^="stepthink_character_settings--"] .thinking_prompt_container input,
+    [id^="stepthink_character_settings--"] .thinking_prompt_container textarea {
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    .thoughts {
+        padding: 8px;
+    }
+
+    .thought_summary_container {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-left: 0;
+    }
+
+    .thought_control_buttons {
+        flex-wrap: wrap;
+    }
+
+    .generated_thought_name,
+    .generated_thought {
+        overflow-wrap: anywhere;
+    }
+}
+
+@media (min-width: 701px) and (max-width: 1024px) {
+    #stepthink_settings .thinking_prompt_container textarea,
+    [id^="stepthink_character_settings--"] .thinking_prompt_container textarea {
+        min-height: 7rem;
+    }
+}

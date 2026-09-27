@@ -423,16 +423,20 @@ async function generateThoughts() {
         toastThinking = toastr.info(toastThinkingMessage, 'Stepped Thinking', { timeOut: 0, extendedTimeOut: 0 });
     }
 
-    const prompts = currentGenerationPlan.getThinkingPrompts();
-    for (let i = 0; i < prompts.length; i++) {
-        if (prompts[i].prompt) {
-            const generatedThought = await generateCharacterThought(prompts[i].prompt);
-            await putCharactersThoughts(generatedThought, prompts[i]);
+    try {
+        const prompts = currentGenerationPlan.getThinkingPrompts().filter(prompt => prompt.prompt);
+        validateBatchedPrompts(prompts);
+        const generatedThoughts = await generateCharacterThoughts(prompts);
 
-            if (prompts[i + 1]?.prompt) {
-                await generationDelay();
-            }
+        for (const prompt of prompts) {
+            await putCharactersThoughts(generatedThoughts.get(prompt.name), prompt);
         }
+    } catch (error) {
+        toastr.clear(toastThinking);
+        toastThinking = null;
+        console.error('[Stepped Thinking] Failed to generate batched thoughts', error);
+        toastr.error(error.message, 'Stepped Thinking');
+        throw error;
     }
 
     toastr.clear(toastThinking);
@@ -443,21 +447,50 @@ async function generateThoughts() {
 }
 
 /**
- * @param {string} prompt
- * @return {Promise<string>}
+ * @param {ThinkingPrompt[]} prompts
+ * @return {void}
  */
-async function generateCharacterThought(prompt) {
+function validateBatchedPrompts(prompts) {
+    const names = prompts.map(prompt => prompt.name.trim());
+    if (names.some(name => name.length === 0)) {
+        throw new Error('Every enabled thinking prompt must have a category name before generation can start.');
+    }
+
+    if (new Set(names).size !== names.length) {
+        throw new Error('Enabled thinking prompts must have unique category names before generation can start.');
+    }
+}
+
+/**
+ * @param {ThinkingPrompt[]} prompts
+ * @return {Promise<Map<string, string>>}
+ */
+async function generateCharacterThoughts(prompts) {
     const context = getContext();
 
-    let result, isLengthAboveMinimum = true;
-    do {
-        result = await generateQuietThought(context, prompt);
+    const promptInstructions = prompts
+        .map(prompt => `${JSON.stringify(prompt.name)}:\n${prompt.prompt}`)
+        .join('\n\n');
+    const combinedPrompt = [
+        'Generate one response for each of the following thinking categories.',
+        'Return ONLY a valid JSON object. Do not use markdown fences or any text outside the JSON object.',
+        'The object must contain exactly these category names as keys, with one plain-text string value per key.',
+        '',
+        promptInstructions,
+    ].join('\n');
 
-        isLengthAboveMinimum = result.length >= settings.min_thought_length;
+    let result;
+    let parsedThoughts;
+    let isLengthAboveMinimum = true;
+    do {
+        result = await generateQuietThought(context, combinedPrompt);
+        parsedThoughts = parseBatchedThoughts(result, prompts);
+        isLengthAboveMinimum = [...parsedThoughts.values()]
+            .every(thought => thought.length >= settings.min_thought_length);
         if (!isLengthAboveMinimum) {
             if (settings.is_thinking_popups_enabled) {
                 toastr.warning(
-                    `The response length is below the threshold: ${result.length} < ${settings.min_thought_length}. Repeating generation...`,
+                    `At least one generated thought is below the threshold of ${settings.min_thought_length} characters. Repeating generation...`,
                     'Stepped Thinking',
                     { timeOut: 3000 }
                 );
@@ -466,12 +499,57 @@ async function generateCharacterThought(prompt) {
         }
     } while (!isLengthAboveMinimum);
 
-    if (settings.regexp_to_sanitize.trim() !== '') {
-        const regexp = context.substituteParams(settings.regexp_to_sanitize);
-        result = result.replace(new RegExp(regexp, 'g'), '');
+    return new Map([...parsedThoughts].map(([name, thought]) => [name, sanitizeThought(thought, context)]));
+}
+
+/**
+ * @param {string} result
+ * @param {ThinkingPrompt[]} prompts
+ * @return {Map<string, string>}
+ */
+function parseBatchedThoughts(result, prompts) {
+    if (typeof result !== 'string') {
+        throw new Error('The thinking response was not text.');
     }
 
-    return result;
+    let parsed;
+    try {
+        parsed = JSON.parse(result);
+    } catch {
+        throw new Error('The thinking response was not valid JSON. Generation stopped so the category results are not misassigned.');
+    }
+
+    if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
+        throw new Error('The thinking response must be a JSON object keyed by category name.');
+    }
+
+    const expectedNames = prompts.map(prompt => prompt.name);
+    const actualNames = Object.keys(parsed);
+    if (actualNames.length !== expectedNames.length || expectedNames.some(name => !Object.prototype.hasOwnProperty.call(parsed, name))) {
+        throw new Error(`The thinking response must contain exactly these category keys: ${expectedNames.join(', ')}.`);
+    }
+
+    for (const name of expectedNames) {
+        if (typeof parsed[name] !== 'string' || parsed[name].trim() === '') {
+            throw new Error(`The thinking response for "${name}" must be a non-empty string.`);
+        }
+    }
+
+    return new Map(expectedNames.map(name => [name, parsed[name]]));
+}
+
+/**
+ * @param {string} thought
+ * @param {object} context
+ * @return {string}
+ */
+function sanitizeThought(thought, context) {
+    if (settings.regexp_to_sanitize.trim() !== '') {
+        const regexp = context.substituteParams(settings.regexp_to_sanitize);
+        return thought.replace(new RegExp(regexp, 'g'), '');
+    }
+
+    return thought;
 }
 
 async function generateQuietThought(context, prompt) {
