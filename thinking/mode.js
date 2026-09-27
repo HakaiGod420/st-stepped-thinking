@@ -2008,9 +2008,15 @@ export class EmbeddedThoughtsUI {
         const titleElement = document.createElement('div');
         titleElement.classList.add('flex1');
         if (title !== null) {
-            titleElement.innerHTML = `<b>${title}</b>&nbsp;`;
+            const titleTextElement = document.createElement('b');
+            titleTextElement.textContent = title;
+            titleElement.append(titleTextElement, document.createTextNode('\u00a0'));
         }
-        titleElement.innerHTML += '<i class="mes_ghost fa-solid fa-ghost" title="These thoughts won\'t be included in the prompt" style="display: none"></i>';
+        const ghostIconElement = document.createElement('i');
+        ghostIconElement.classList.add('mes_ghost', 'fa-solid', 'fa-ghost');
+        ghostIconElement.setAttribute('title', 'These thoughts won\'t be included in the prompt');
+        ghostIconElement.style.display = 'none';
+        titleElement.append(ghostIconElement);
 
         const buttonsContainer = document.createElement('div');
         buttonsContainer.classList.add('thought_control_buttons');
@@ -2185,7 +2191,7 @@ export class EmbeddedThoughtsThoughtElementUI {
         thoughtNameContainer.classList.add('generated_thought_name', 'flex-container', 'justifySpaceBetween', 'flexFlowRow');
 
         const thoughtNameElement = document.createElement('div');
-        thoughtNameElement.innerHTML = thought.thinkingPrompt.name;
+        thoughtNameElement.textContent = thought.thinkingPrompt.name;
 
         const buttonsContainer = document.createElement('div');
         buttonsContainer.classList.add('thought_control_buttons');
