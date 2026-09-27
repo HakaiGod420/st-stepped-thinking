@@ -475,6 +475,7 @@ async function generateCharacterThoughts(prompts) {
         'Generate one response for each of the following thinking categories.',
         'Return ONLY a valid JSON object. Do not use markdown fences or any text outside the JSON object.',
         'The object must contain exactly these category names as keys, with one plain-text string value per key.',
+        'Example format: {"Thoughts":"...","Plans":"..."}',
         '',
         promptInstructions,
     ].join('\n');
@@ -514,7 +515,7 @@ function parseBatchedThoughts(result, prompts) {
 
     let parsed;
     try {
-        parsed = JSON.parse(result);
+        parsed = JSON.parse(normalizeJsonResponse(result));
     } catch {
         throw new Error('The thinking response was not valid JSON. Generation stopped so the category results are not misassigned.');
     }
@@ -536,6 +537,30 @@ function parseBatchedThoughts(result, prompts) {
     }
 
     return new Map(expectedNames.map(name => [name, parsed[name]]));
+}
+
+/**
+ * Models commonly wrap an otherwise valid JSON response in a markdown fence or a short
+ * introductory sentence. Remove only those transport wrappers; the parsed value is still
+ * required to be an object with exactly the configured category keys.
+ *
+ * @param {string} result
+ * @return {string}
+ */
+function normalizeJsonResponse(result) {
+    const trimmedResult = result.trim();
+    const fencedMatch = trimmedResult.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    if (fencedMatch) {
+        return fencedMatch[1].trim();
+    }
+
+    const objectStart = trimmedResult.indexOf('{');
+    const objectEnd = trimmedResult.lastIndexOf('}');
+    if (objectStart > 0 && objectEnd > objectStart) {
+        return trimmedResult.slice(objectStart, objectEnd + 1);
+    }
+
+    return trimmedResult;
 }
 
 /**
