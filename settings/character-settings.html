@@ -19,22 +19,22 @@
         </label>
     </div>
 
-    <div class="flex-container marginTopBot5">
+    <div class="flex-container marginTopBot5" title="Optional: make this character follow a specific direction while generating thoughts and plans">
         <label class="checkbox_label expander"
                for="stepthink_is_goal_enabled--{{short_name}}"
-               title="Guide this character's thoughts and plans toward the goal below">
+               title="Enable the optional character goal below">
             <input id="stepthink_is_goal_enabled--{{short_name}}" type="checkbox"/>
-            Enable thinking goal
+            Enable character goal / scenario
         </label>
     </div>
 
     <div class="flex-container marginTopBot5">
         <label for="stepthink_goal--{{short_name}}"
-               title="This goal guides thought generation for this character but does not directly change the normal reply prompt">
-            Thinking goal:
+               title="This guides the character's generated thoughts and plans; it does not directly change the normal reply prompt">
+            Goal / direction:
         </label>
         <textarea id="stepthink_goal--{{short_name}}" class="text_pole" rows="3"
-                  placeholder="For example: Become friends with the user"></textarea>
+                  placeholder="Example: Become friends with the user"></textarea>
     </div>
 
     <div class="flex-container justifySpaceBetween alignItemsCenter">

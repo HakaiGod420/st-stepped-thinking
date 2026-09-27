@@ -385,19 +385,19 @@ function onTextareaInput(...settingNames) {
             subSettings = subSettings[settingNames[i]];
         }
 
-        /**
-         * @param {string} settingName
-         * @param {object} setting
-         * @return {(function(): void)}
-         */
-        function onCharacterSettingTextareaInput(settingName, setting) {
-            return function () {
-                setting[settingName] = $(this).val();
-                saveSettingsDebounced();
-            };
-        }
-
         subSettings[lastSetting] = $(this).val();
+        saveSettingsDebounced();
+    };
+}
+
+/**
+ * @param {string} settingName
+ * @param {object} setting
+ * @return {(function(): void)}
+ */
+function onCharacterSettingTextareaInput(settingName, setting) {
+    return function () {
+        setting[settingName] = $(this).val();
         saveSettingsDebounced();
     };
 }
