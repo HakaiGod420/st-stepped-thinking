@@ -517,14 +517,11 @@ async function generateCharacterThoughts(prompts) {
  * @return {string}
  */
 function getCharacterThinkingGoal() {
-    const characterId = currentGenerationPlan?.getCharacterId();
-    const characterSettings = getCharacterSettings(characterId);
-
-    if (!characterSettings?.is_goal_enabled || typeof characterSettings.goal !== 'string') {
+    if (!settings.is_goal_enabled || typeof settings.goal !== 'string') {
         return '';
     }
 
-    return characterSettings.goal.trim();
+    return settings.goal.trim();
 }
 
 /**

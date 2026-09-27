@@ -164,6 +164,8 @@ const defaultCommonSettings = {
     'shown_popup_version': lastPopupVersion,
     'is_shutdown': false,
     'is_enabled': true,
+    'is_goal_enabled': false,
+    'goal': '',
     'is_wian_skipped': false,
     'is_thinking_popups_enabled': true,
     'is_thoughts_spoiler_open': false,
@@ -224,6 +226,8 @@ function loadCommonSettings() {
     $('#stepthink_thinking_connection_profile').val(settings.thinking_connection_profile);
     $('#stepthink_thinking_context_messages').val(settings.thinking_context_messages);
     $('#stepthink_is_enabled').prop('checked', settings.is_enabled).trigger('input');
+    $('#stepthink_is_goal_enabled').prop('checked', settings.is_goal_enabled).trigger('input');
+    $('#stepthink_goal').val(settings.goal);
     $('#stepthink_is_wian_skipped').prop('checked', settings.is_wian_skipped).trigger('input');
     $('#stepthink_is_thoughts_spoiler_open').prop('checked', settings.is_thoughts_spoiler_open).trigger('input');
     $('#stepthink_is_thinking_popups_enabled').prop('checked', settings.is_thinking_popups_enabled).trigger('input');
@@ -256,6 +260,8 @@ function registerCommonSettingListeners() {
     $('#stepthink_reset_settings').on('click', onResetSettings);
 
     $('#stepthink_is_enabled').on('input', onCheckboxInput('is_enabled'));
+    $('#stepthink_is_goal_enabled').on('input', onCheckboxInput('is_goal_enabled'));
+    $('#stepthink_goal').on('input', onTextareaInput('goal'));
     $('#stepthink_is_shutdown').on('input', onCheckboxInput('is_shutdown'));
     $('#stepthink_is_wian_skipped').on('input', onCheckboxInput('is_wian_skipped'));
     $('#stepthink_is_thoughts_spoiler_open').on('input', onCheckboxInput('is_thoughts_spoiler_open'));
@@ -391,18 +397,6 @@ function onTextareaInput(...settingNames) {
 }
 
 /**
- * @param {string} settingName
- * @param {object} setting
- * @return {(function(): void)}
- */
-function onCharacterSettingTextareaInput(settingName, setting) {
-    return function () {
-        setting[settingName] = $(this).val();
-        saveSettingsDebounced();
-    };
-}
-
-/**
  * @return {void}
  */
 function onGenerationDelayInput() {
@@ -450,8 +444,6 @@ function activateThinkingMode(mode) {
  * @property {boolean} is_setting_enabled - whether this set of options will be applied or not
  * @property {boolean} is_thinking_enabled - whether the thinking process will be run for the character or not
  * @property {boolean} is_mind_reader - whether the character can read the other characters' thoughts or not
- * @property {boolean} is_goal_enabled - whether the character's thinking goal will be applied
- * @property {string} goal - a goal that guides thought generation for the character
  * @property {ThinkingPrompt[]} thinking_prompts - a unique set of thinking prompts that will be used by the character
  */
 
@@ -600,8 +592,6 @@ async function showCharacterSettingsPopup(characterAvatar) {
 
     $(`#stepthink_is_thinking_enabled--${shortName}`).on('input', onCheckboxInput('is_thinking_enabled', setting));
     $(`#stepthink_is_mind_reader--${shortName}`).on('input', onCheckboxInput('is_mind_reader', setting));
-    $(`#stepthink_is_goal_enabled--${shortName}`).on('input', onCheckboxInput('is_goal_enabled', setting));
-    $(`#stepthink_goal--${shortName}`).on('input', onCharacterSettingTextareaInput('goal', setting));
 }
 
 /**
@@ -615,8 +605,6 @@ function onCharacterSettingReady(shortName, setting) {
 
         $(`#stepthink_is_thinking_enabled--${shortName}`).prop('checked', setting.is_thinking_enabled);
         $(`#stepthink_is_mind_reader--${shortName}`).prop('checked', setting.is_mind_reader);
-        $(`#stepthink_is_goal_enabled--${shortName}`).prop('checked', setting.is_goal_enabled === true);
-        $(`#stepthink_goal--${shortName}`).val(setting.goal ?? '');
     };
 }
 
@@ -645,8 +633,6 @@ function selectCharacter(characterAvatar) {
             is_setting_enabled: true,
             is_thinking_enabled: true,
             is_mind_reader: false,
-            is_goal_enabled: false,
-            goal: '',
             thinking_prompts: [],
         };
         settings.character_settings.push(setting);

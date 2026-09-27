@@ -22,7 +22,7 @@ prompt generation. This increases the overall waiting time for a response in fav
 2. Excluding specific characters from the thinking process.
 3. Isolating thoughts from different characters in group chats by default.
 4. Allowing certain characters to read the thoughts of other characters in group chats.
-5. Optionally guiding a character's thoughts and plans toward a persistent per-character goal.
+5. Optionally guiding generated thoughts and plans toward a persistent goal or scenario.
 
 ### Planned
 
@@ -79,10 +79,10 @@ These settings will override the general ones when active. For example, you can 
 a particular character or use specific thinking prompts for them. If the `Prompts for thinking` section is empty in the
 character's settings, the general prompts will be used.
 
-Each character card also has an optional `Thinking goal`. Enable it and enter one free-text goal or scenario, such as
-`Become friends with the user`, to guide all of that character's generated thoughts and plans toward the desired
-direction. The goal is disabled by default, is ignored when empty, and does not directly change the character's normal
-reply prompt.
+The main Stepped Thinking extension panel has an optional `Goal / scenario guidance` setting. Enable it and enter one
+free-text goal or scenario, such as `Become friends with the user`, to guide generated thoughts and plans toward the
+desired direction. The goal is disabled by default, is ignored when empty, and does not directly change the character's
+normal reply prompt.
 
 ![character_settings_popup](https://github.com/user-attachments/assets/133a8f71-4f7c-41ce-b23a-4a06150d1f8a)
 

@@ -19,24 +19,6 @@
         </label>
     </div>
 
-    <div class="flex-container marginTopBot5" title="Optional: make this character follow a specific direction while generating thoughts and plans">
-        <label class="checkbox_label expander"
-               for="stepthink_is_goal_enabled--{{short_name}}"
-               title="Enable the optional character goal below">
-            <input id="stepthink_is_goal_enabled--{{short_name}}" type="checkbox"/>
-            Enable character goal / scenario
-        </label>
-    </div>
-
-    <div class="flex-container marginTopBot5">
-        <label for="stepthink_goal--{{short_name}}"
-               title="This guides the character's generated thoughts and plans; it does not directly change the normal reply prompt">
-            Goal / direction:
-        </label>
-        <textarea id="stepthink_goal--{{short_name}}" class="text_pole" rows="3"
-                  placeholder="Example: Become friends with the user"></textarea>
-    </div>
-
     <div class="flex-container justifySpaceBetween alignItemsCenter">
     <span title="If the list is not empty, these prompts will be used instead of the default ones for this character. Enabled names must be unique because they are JSON keys in one combined request.">
         Prompts for thinking (one JSON request):
