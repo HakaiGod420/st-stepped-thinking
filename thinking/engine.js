@@ -13,7 +13,7 @@ import { is_group_generating } from '../../../../group-chats.js';
 import { findMode, registerThinkingModeListeners } from './mode.js';
 import { registerPromptAdjustmentListeners } from './prompt_adjustment.js';
 import { findChar, getCharIndex } from '../../../../utils.js';
-import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
+import { SlashCommandParser } from '../../../../slash-commands/SlashCommandParser.js';
 
 /**
  * @type {{is_enabled: ?boolean, thinking_prompt_ids: ?number[]}}
