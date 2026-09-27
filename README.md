@@ -83,6 +83,19 @@ Click `Activate` to apply the specified settings, or `Deactivate` to disable the
 can find the full list of active character settings in the regular Stepped Thinking settings menu under the `Character
 Settings` block.
 
+#### Generation settings
+
+The `Thinking connection` selector can use an existing SillyTavern connection profile for thought generation.
+`Use main connection` leaves the active connection unchanged. When a profile is selected, it is applied only for
+the thought request and the previous connection is restored afterward.
+
+`Recent messages for thinking` limits the thought-generation context to the most recent chat messages. It defaults
+to 10 and does not change the existing system prompt, World Info, Author's Note, or thought-prompt handling.
+Set it to 0 to use all chat messages.
+
+`Reset to defaults` restores every Stepped Thinking setting, including character-specific settings and custom prompts.
+This action requires confirmation.
+
 ### Slash commands
 
 #### /stepthink-trigger

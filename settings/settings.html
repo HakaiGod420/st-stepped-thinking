@@ -27,6 +27,13 @@
                 </select>
             </div>
 
+            <div class="flex-container alignItemsCenter marginTopBot5">
+                Thinking connection:
+                <select id="stepthink_thinking_connection_profile" class="text_pole widthNatural">
+                    <option value="">Use main connection</option>
+                </select>
+            </div>
+
             <hr/>
 
             <div class="flex-container justifySpaceBetween alignItemsCenter">
@@ -102,6 +109,10 @@
                     <i class="fa-solid fa-cog"></i>
                     Additional Settings
                 </div>
+                <div id="stepthink_reset_settings" class="menu_button menu_button_icon margin0"
+                     title="Reset all Stepped Thinking settings, including character-specific settings">
+                    Reset to defaults
+                </div>
             </div>
             <div id="stepthink_additional_settings" style="display:none;">
                 <div class="flex-container marginTopBot5">
@@ -118,6 +129,16 @@
                         <input id="stepthink_is_thinking_popups_enabled" type="checkbox"/>
                         Enable popups when a character is thinking
                     </label>
+                </div>
+
+                <div class="flex-container marginTopBot5">
+                    <div class="flex-container flex1"
+                         title="The number of most recent chat messages used when generating thoughts. Set to 0 to use all messages">
+                        <label for="stepthink_thinking_context_messages">
+                            Recent messages for thinking:
+                        </label>
+                        <input type="number" id="stepthink_thinking_context_messages" class="text_pole" min="0"/>
+                    </div>
                 </div>
 
                 <div class="flex-container marginTopBot5">

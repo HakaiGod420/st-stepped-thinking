@@ -26,11 +26,35 @@ export const defaultSettings = () => Object.assign({},
     defaultCharactersSettings,
 );
 
+function createDefaultSettings() {
+    return structuredClone(defaultSettings());
+}
+
 /**
  * @return {void}
  */
 export function addSettingsUI() {
     addCharacterSettingMenuButton();
+}
+
+function onThinkingConnectionProfileInput() {
+    settings.thinking_connection_profile = String($(this).val() || '');
+    saveSettingsDebounced();
+}
+
+async function onResetSettings() {
+    const confirmationResult = await callGenericPopup(
+        'Are you sure you want to reset all Stepped Thinking settings, including character-specific settings and prompts?',
+        POPUP_TYPE.CONFIRM,
+    );
+    if (!confirmationResult) {
+        return;
+    }
+
+    extension_settings[extensionName] = createDefaultSettings();
+    settings = extension_settings[extensionName];
+    await saveSettings();
+    location.reload();
 }
 
 /**
@@ -42,6 +66,17 @@ export function registerSettingsListeners() {
     registerThinkingPromptListeners();
 
     eventSource.on(event_types.APP_READY, migrateNamesToAvatarsInV3CharacterSettings);
+}
+
+function renderAvailableConnectionProfiles() {
+    const selector = $('#stepthink_thinking_connection_profile');
+    selector.empty().append($('<option>', { value: '', text: 'Use main connection' }));
+
+    const profiles = extension_settings.connectionManager?.profiles ?? [];
+    profiles
+        .filter(profile => profile.name)
+        .sort((first, second) => first.name.localeCompare(second.name))
+        .forEach(profile => selector.append($('<option>', { value: profile.name, text: profile.name })));
 }
 
 /**
@@ -141,6 +176,8 @@ const defaultCommonSettings = {
     'max_response_length': 0,
     'regexp_to_sanitize': '(<\\/?details\\s?(type="executing")?>)|(<\\/?summary>)|(Thinking ({{char}}) 💭)|(```)|(<\\/?[\\w\\s]*>)',
     'max_hiding_thoughts_lookup': 1000,
+    'thinking_connection_profile': '',
+    'thinking_context_messages': 10,
 
     // separated
     'system_character_name_template': '{{char}}\'s Thoughts',
@@ -172,6 +209,7 @@ function loadCommonSettings() {
     $('#stepthink_is_shutdown').addClass(settings.is_shutdown ? 'stepthink_shutdown_turn_on' : 'stepthink_shutdown_turn_off');
 
     renderAvailableThinkingModes();
+    renderAvailableConnectionProfiles();
     $(`#stepthink_mode option[value="${settings.mode}"]`).prop('selected', 'true');
     activateThinkingMode(settings.mode);
 
@@ -183,6 +221,8 @@ function loadCommonSettings() {
     $('#stepthink_max_response_length').val(settings.max_response_length);
     $('#stepthink_generation_delay').val(settings.generation_delay);
     $('#stepthink_max_hiding_thoughts_lookup').val(settings.max_hiding_thoughts_lookup);
+    $('#stepthink_thinking_connection_profile').val(settings.thinking_connection_profile);
+    $('#stepthink_thinking_context_messages').val(settings.thinking_context_messages);
     $('#stepthink_is_enabled').prop('checked', settings.is_enabled).trigger('input');
     $('#stepthink_is_wian_skipped').prop('checked', settings.is_wian_skipped).trigger('input');
     $('#stepthink_is_thoughts_spoiler_open').prop('checked', settings.is_thoughts_spoiler_open).trigger('input');
@@ -212,6 +252,8 @@ function registerCommonSettingListeners() {
     $('#stepthink_is_shutdown').on('click', onShutdownClick);
 
     $('#stepthink_mode').on('input', onSwitchThinkingMode);
+    $('#stepthink_thinking_connection_profile').on('input', onThinkingConnectionProfileInput);
+    $('#stepthink_reset_settings').on('click', onResetSettings);
 
     $('#stepthink_is_enabled').on('input', onCheckboxInput('is_enabled'));
     $('#stepthink_is_shutdown').on('input', onCheckboxInput('is_shutdown'));
@@ -228,6 +270,7 @@ function registerCommonSettingListeners() {
     $('#stepthink_max_response_length').on('input', onIntegerTextareaInput('max_response_length'));
     $('#stepthink_generation_delay').on('input', onGenerationDelayInput);
     $('#stepthink_max_hiding_thoughts_lookup').on('input', onIntegerTextareaInput('max_hiding_thoughts_lookup'));
+    $('#stepthink_thinking_context_messages').on('input', onIntegerTextareaInput('thinking_context_messages'));
 
     $('#stepthink_sending_thoughts_role').on('input', onIntegerTextareaInput('sending_thoughts_role'));
     $('#stepthink_thoughts_block_title').on('input', onTextareaInput('thoughts_block_title'));

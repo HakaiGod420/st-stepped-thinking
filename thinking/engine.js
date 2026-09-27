@@ -13,6 +13,7 @@ import { is_group_generating } from '../../../../group-chats.js';
 import { findMode, registerThinkingModeListeners } from './mode.js';
 import { registerPromptAdjustmentListeners } from './prompt_adjustment.js';
 import { findChar, getCharIndex } from '../../../../utils.js';
+import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 
 /**
  * @type {{is_enabled: ?boolean, thinking_prompt_ids: ?number[]}}
@@ -450,12 +451,7 @@ async function generateCharacterThought(prompt) {
 
     let result, isLengthAboveMinimum = true;
     do {
-        result = await context.generateQuietPrompt({
-            quietPrompt: prompt,
-            skipWIAN: settings.is_wian_skipped,
-            responseLength: settings.max_response_length,
-            forceChId: currentGenerationPlan.getCharacterId(),
-        });
+        result = await generateQuietThought(context, prompt);
 
         isLengthAboveMinimum = result.length >= settings.min_thought_length;
         if (!isLengthAboveMinimum) {
@@ -476,6 +472,61 @@ async function generateCharacterThought(prompt) {
     }
 
     return result;
+}
+
+async function generateQuietThought(context, prompt) {
+    return withThinkingConnection(async () => {
+        const originalChat = context.chat.slice();
+        const messageLimit = settings.thinking_context_messages;
+        if (messageLimit > 0 && originalChat.length > messageLimit) {
+            context.chat.splice(0, originalChat.length - messageLimit);
+        }
+
+        try {
+            return await context.generateQuietPrompt({
+                quietPrompt: prompt,
+                skipWIAN: settings.is_wian_skipped,
+                responseLength: settings.max_response_length,
+                forceChId: currentGenerationPlan.getCharacterId(),
+            });
+        } finally {
+            context.chat.splice(0, context.chat.length, ...originalChat);
+        }
+    });
+}
+
+async function withThinkingConnection(callback) {
+    const profileName = settings.thinking_connection_profile;
+    if (!profileName) {
+        return callback();
+    }
+
+    const profileCommand = SlashCommandParser.commands.profile;
+    if (!profileCommand?.callback) {
+        throw new Error('[Stepped Thinking] Cannot use the selected thinking connection profile because SillyTavern connection profiles are unavailable.');
+    }
+
+    const previousProfile = await profileCommand.callback({}, undefined);
+    if (previousProfile === profileName) {
+        return callback();
+    }
+
+    try {
+        const appliedProfile = await profileCommand.callback({ await: 'true' }, profileName);
+        if (appliedProfile !== profileName) {
+            throw new Error(`[Stepped Thinking] The selected thinking connection profile "${profileName}" could not be applied.`);
+        }
+
+        return await callback();
+    } finally {
+        try {
+            await profileCommand.callback({ await: 'true' }, previousProfile);
+        } catch (error) {
+            console.error('[Stepped Thinking] Failed to restore the main connection after thought generation', error);
+            toastr.error('Failed to restore the main connection after thought generation', 'Stepped Thinking');
+            throw error;
+        }
+    }
 }
 
 /**
