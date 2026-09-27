@@ -19,6 +19,24 @@
         </label>
     </div>
 
+    <div class="flex-container marginTopBot5">
+        <label class="checkbox_label expander"
+               for="stepthink_is_goal_enabled--{{short_name}}"
+               title="Guide this character's thoughts and plans toward the goal below">
+            <input id="stepthink_is_goal_enabled--{{short_name}}" type="checkbox"/>
+            Enable thinking goal
+        </label>
+    </div>
+
+    <div class="flex-container marginTopBot5">
+        <label for="stepthink_goal--{{short_name}}"
+               title="This goal guides thought generation for this character but does not directly change the normal reply prompt">
+            Thinking goal:
+        </label>
+        <textarea id="stepthink_goal--{{short_name}}" class="text_pole" rows="3"
+                  placeholder="For example: Become friends with the user"></textarea>
+    </div>
+
     <div class="flex-container justifySpaceBetween alignItemsCenter">
     <span title="If the list is not empty, these prompts will be used instead of the default ones for this character. Enabled names must be unique because they are JSON keys in one combined request.">
         Prompts for thinking (one JSON request):

@@ -385,6 +385,18 @@ function onTextareaInput(...settingNames) {
             subSettings = subSettings[settingNames[i]];
         }
 
+        /**
+         * @param {string} settingName
+         * @param {object} setting
+         * @return {(function(): void)}
+         */
+        function onCharacterSettingTextareaInput(settingName, setting) {
+            return function () {
+                setting[settingName] = $(this).val();
+                saveSettingsDebounced();
+            };
+        }
+
         subSettings[lastSetting] = $(this).val();
         saveSettingsDebounced();
     };
@@ -438,6 +450,8 @@ function activateThinkingMode(mode) {
  * @property {boolean} is_setting_enabled - whether this set of options will be applied or not
  * @property {boolean} is_thinking_enabled - whether the thinking process will be run for the character or not
  * @property {boolean} is_mind_reader - whether the character can read the other characters' thoughts or not
+ * @property {boolean} is_goal_enabled - whether the character's thinking goal will be applied
+ * @property {string} goal - a goal that guides thought generation for the character
  * @property {ThinkingPrompt[]} thinking_prompts - a unique set of thinking prompts that will be used by the character
  */
 
@@ -586,6 +600,8 @@ async function showCharacterSettingsPopup(characterAvatar) {
 
     $(`#stepthink_is_thinking_enabled--${shortName}`).on('input', onCheckboxInput('is_thinking_enabled', setting));
     $(`#stepthink_is_mind_reader--${shortName}`).on('input', onCheckboxInput('is_mind_reader', setting));
+    $(`#stepthink_is_goal_enabled--${shortName}`).on('input', onCheckboxInput('is_goal_enabled', setting));
+    $(`#stepthink_goal--${shortName}`).on('input', onCharacterSettingTextareaInput('goal', setting));
 }
 
 /**
@@ -599,6 +615,8 @@ function onCharacterSettingReady(shortName, setting) {
 
         $(`#stepthink_is_thinking_enabled--${shortName}`).prop('checked', setting.is_thinking_enabled);
         $(`#stepthink_is_mind_reader--${shortName}`).prop('checked', setting.is_mind_reader);
+        $(`#stepthink_is_goal_enabled--${shortName}`).prop('checked', setting.is_goal_enabled === true);
+        $(`#stepthink_goal--${shortName}`).val(setting.goal ?? '');
     };
 }
 
@@ -627,6 +645,8 @@ function selectCharacter(characterAvatar) {
             is_setting_enabled: true,
             is_thinking_enabled: true,
             is_mind_reader: false,
+            is_goal_enabled: false,
+            goal: '',
             thinking_prompts: [],
         };
         settings.character_settings.push(setting);

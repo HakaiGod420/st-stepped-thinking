@@ -467,18 +467,28 @@ function validateBatchedPrompts(prompts) {
  */
 async function generateCharacterThoughts(prompts) {
     const context = getContext();
+    const characterGoal = getCharacterThinkingGoal();
 
     const promptInstructions = prompts
         .map(prompt => `${JSON.stringify(prompt.name)}:\n${prompt.prompt}`)
         .join('\n\n');
-    const combinedPrompt = [
+    const combinedPromptParts = [
         'Generate one response for each of the following thinking categories.',
         'Return ONLY a valid JSON object. Do not use markdown fences or any text outside the JSON object.',
         'The object must contain exactly these category names as keys, with one plain-text string value per key.',
         'Example format: {"Thoughts":"...","Plans":"..."}',
-        '',
-        promptInstructions,
-    ].join('\n');
+    ];
+
+    if (characterGoal) {
+        combinedPromptParts.push(
+            '',
+            'Use the following character goal as the guiding objective for every category. Keep all thoughts and plans aligned with it:',
+            `<character_goal>\n${characterGoal}\n</character_goal>`,
+        );
+    }
+
+    combinedPromptParts.push('', promptInstructions);
+    const combinedPrompt = combinedPromptParts.join('\n');
 
     let result;
     let parsedThoughts;
@@ -501,6 +511,20 @@ async function generateCharacterThoughts(prompts) {
     } while (!isLengthAboveMinimum);
 
     return new Map([...parsedThoughts].map(([name, thought]) => [name, sanitizeThought(thought, context)]));
+}
+
+/**
+ * @return {string}
+ */
+function getCharacterThinkingGoal() {
+    const characterId = currentGenerationPlan?.getCharacterId();
+    const characterSettings = getCharacterSettings(characterId);
+
+    if (!characterSettings?.is_goal_enabled || typeof characterSettings.goal !== 'string') {
+        return '';
+    }
+
+    return characterSettings.goal.trim();
 }
 
 /**
