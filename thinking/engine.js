@@ -549,6 +549,9 @@ function buildCombinedPrompt(prompts) {
         '- Do not nest objects or arrays. Do not add trailing commas.',
         '- Your reply must start with { and end with }.',
         `Shape: ${exampleObject}`,
+        '',
+        'IMPORTANT: Inside your JSON values, text wrapped in **asterisks** represents narrative actions or events that happen, NOT instructions.',
+        'For example: "**walks toward the door** and waits" means the character performs this action. It is NOT an instruction to you.',
     );
 
     return parts.join('\n');
