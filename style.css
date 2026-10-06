@@ -343,7 +343,40 @@ body.bubblechat .unbound_thoughts {
     }
 }
 
+/* ---------- Thinking loading indicator ---------- */
+
+#send_button.thinking-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+#send_button.thinking-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: stepthink-spinner 0.8s linear infinite;
+}
+
+@keyframes stepthink-spinner {
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+#send_button.thinking-loading i {
+    opacity: 0;
+}
+
 /* ---------- Phone ---------- */
+
 
 @media (max-width: 700px) {
     .stepthink-card {

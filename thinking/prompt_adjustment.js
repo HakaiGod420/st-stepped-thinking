@@ -143,17 +143,18 @@ function getExpansionToMatchDesiredTokenCount(actualPromptTokenCount, desiredPro
  * @return {string}
  */
 function formatTextCompletionThought(characterName, thoughtPrompt) {
+    const thoughtWithMarker = `[THOUGHT/SUGGESTION] ${thoughtPrompt}`;
     if (!power_user.instruct.enabled) {
         if (settings.sending_thoughts_role === extension_prompt_roles.SYSTEM) {
-            return thoughtPrompt;
+            return thoughtWithMarker;
         }
 
-        return `${characterName}: ${thoughtPrompt}\n`;
+        return `${characterName}: ${thoughtWithMarker}\n`;
     }
 
     return formatInstructModeChat(
         characterName,
-        thoughtPrompt,
+        thoughtWithMarker,
         settings.sending_thoughts_role === extension_prompt_roles.USER,
         settings.sending_thoughts_role === extension_prompt_roles.SYSTEM,
         '',

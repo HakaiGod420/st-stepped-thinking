@@ -392,6 +392,26 @@ async function sendUserMessage(textarea) {
 }
 
 /**
+ * @return {void}
+ */
+function showThinkingLoadingIndicator() {
+    const sendButton = $('#send_button');
+    if (sendButton.length) {
+        sendButton.addClass('thinking-loading');
+    }
+}
+
+/**
+ * @return {void}
+ */
+function hideThinkingLoadingIndicator() {
+    const sendButton = $('#send_button');
+    if (sendButton.length) {
+        sendButton.removeClass('thinking-loading');
+    }
+}
+
+/**
  * The Generate function sends input from #send_textarea before starting generation. Since the user probably doesn't
  * want their input to be suddenly sent when the character finishes thinking, the input field is disabled during the process
  *
@@ -404,7 +424,10 @@ async function generateThoughtsWithDisabledInput(textarea) {
     textarea.prop('readonly', true);
     textarea.val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
 
+    showThinkingLoadingIndicator();
+
     await generateThoughts().finally(() => {
+        hideThinkingLoadingIndicator();
         textarea.prop('readonly', false);
         textarea.attr('placeholder', sendTextareaOriginalPlaceholder);
         sendTextareaOriginalPlaceholder = null;
@@ -541,12 +564,26 @@ function buildCombinedPrompt(prompts) {
     if (characterGoal) {
         parts.push(
             '',
-            'Use the following character goal as the guiding objective for every category. Keep all thoughts and plans aligned with it:',
+            '[GOAL/GUIDANCE - OPTIONAL REFERENCE ONLY]',
+            'The following is a suggested goal/direction to guide your response. Use it as reference, but alter or ignore it if it does not make sense in the current context:',
             `<character_goal>\n${characterGoal}\n</character_goal>`,
+            '',
+            'IMPORTANT: Keep all goals and plans SHORT-TERM and focused on the immediate/current scene only. Do not plan for the entire day or distant future.',
+        );
+    } else {
+        parts.push(
+            '',
+            'IMPORTANT: Keep all goals and plans SHORT-TERM and focused on the immediate/current scene only. Do not plan for the entire day or distant future.',
         );
     }
 
-    parts.push('', 'CATEGORIES AND THEIR INSTRUCTIONS:');
+    parts.push(
+        '',
+        '[THOUGHT CATEGORIES - SUGGESTIONS, NOT REQUIREMENTS]',
+        'The following prompts ask for character thoughts. These are suggestions to guide your thinking, but may be altered or omitted if they do not fit the current scene.',
+        '',
+        'CATEGORIES AND THEIR INSTRUCTIONS:',
+    );
     for (const prompt of prompts) {
         parts.push('', `### ${JSON.stringify(prompt.name)}`, prompt.prompt.trim());
     }
@@ -908,7 +945,7 @@ function buildProfileMessages(context, prompt) {
     sections.push(prompt);
 
     return [
-        { role: 'system', content: substituteParams(`You are a roleplay engine that writes a character's hidden inner state as strict JSON. You never add commentary outside the JSON.`) },
+        { role: 'system', content: substituteParams(`You are a roleplay engine that writes a character's hidden inner state as strict JSON. You never add commentary outside the JSON. Remember: Any guidance marked as [OPTIONAL] or [SUGGESTION] in the prompt can be altered, ignored, or adapted if it does not fit the current scene.`) },
         { role: 'user', content: substituteParams(sections.join('\n\n'), userName, characterName) },
     ];
 }
