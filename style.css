@@ -1,3 +1,5 @@
+/* ---------- Thoughts in chat ---------- */
+
 .thinking_prompt_container {
     flex: 1 1 auto;
 }
@@ -5,7 +7,8 @@
 .thoughts {
     display: flex;
     align-items: flex-start;
-    padding: 10px;
+    box-sizing: border-box;
+    padding: 10px 12px;
     margin-top: 0;
     width: 100%;
     color: var(--SmartThemeBodyColor);
@@ -13,7 +16,7 @@
 }
 
 body.bubblechat .thoughts {
-    border-radius: 10px;
+    border-radius: 12px;
     background-color: var(--SmartThemeBotMesBlurTintColor);
     margin-bottom: 0;
     border: 1px solid var(--SmartThemeBorderColor);
@@ -21,6 +24,7 @@ body.bubblechat .thoughts {
 
 .thoughts_details {
     width: 100%;
+    min-width: 0;
 }
 
 .thought_items {
@@ -37,14 +41,20 @@ body.bubblechat .thoughts {
 
 .thought_summary_container::before {
     display: flex;
+    align-items: center;
     content: '▶';
+    font-size: 0.7em;
     margin-right: 8px;
+    opacity: 0.7;
+    transition: transform 0.15s ease;
 }
 
 .thought_summary_container {
     display: flex;
-    margin-left: 5px;
+    align-items: center;
+    margin-left: 4px;
     padding-bottom: 3px;
+    cursor: pointer;
 }
 
 .thought_control_buttons {
@@ -61,11 +71,12 @@ body.bubblechat .thoughts {
 }
 
 .thought_control_buttons .menu_button {
-    opacity: 0.5;
+    opacity: 0.55;
     aspect-ratio: 1 / 1;
     height: 1.75rem;
     margin: 0 0 0 2px;
     padding: 0;
+    border-radius: 8px;
 }
 
 .thought_control_buttons .menu_button:hover {
@@ -74,18 +85,19 @@ body.bubblechat .thoughts {
 
 .generated_thought_name {
     font-weight: 600;
-    margin: 10px 0 0 5px;
-    padding: 5px 0 5px 10px;
-    /*background-color: var(--SmartThemeChatTintColor);*/
-    /*background-color: var(--SmartThemeBorderColor);*/
-    border-left: 3px solid var(--SmartThemeBorderColor);
+    font-size: 0.92em;
+    letter-spacing: 0.02em;
+    margin: 10px 0 2px 4px;
+    padding: 4px 0 4px 10px;
+    border-left: 3px solid var(--SmartThemeQuoteColor, var(--SmartThemeBorderColor));
 }
 
 .generated_thought {
-    margin: 0 0 5px 5px;
-    padding: 5px 10px 5px 10px;
+    margin: 0 0 6px 4px;
+    padding: 8px 12px;
     background-color: var(--SmartThemeShadowColor);
     border-left: 3px solid var(--SmartThemeBorderColor);
+    border-radius: 0 8px 8px 0;
 }
 
 .generated_thought q:before,
@@ -118,6 +130,199 @@ body.bubblechat .unbound_thoughts {
     background-blend-mode: multiply;
 }
 
+/* ---------- Settings panel ---------- */
+
+.stepthink-root {
+    --stepthink-radius: 12px;
+    --stepthink-gap: 10px;
+    --stepthink-card-bg: color-mix(in srgb, var(--SmartThemeBlurTintColor, #000) 55%, transparent);
+    --stepthink-border: color-mix(in srgb, var(--SmartThemeBorderColor, #888) 70%, transparent);
+    box-sizing: border-box;
+    min-width: 0;
+}
+
+.stepthink-root *,
+.stepthink-root *::before,
+.stepthink-root *::after {
+    box-sizing: border-box;
+}
+
+.stepthink-root .inline-drawer-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--stepthink-gap);
+    padding-top: var(--stepthink-gap);
+}
+
+.stepthink-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    background: var(--stepthink-card-bg);
+    border: 1px solid var(--stepthink-border);
+    border-radius: var(--stepthink-radius);
+    min-width: 0;
+}
+
+.stepthink-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+}
+
+.stepthink-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 0.95em;
+    letter-spacing: 0.02em;
+    min-width: 0;
+}
+
+.stepthink-card-title i {
+    opacity: 0.75;
+    width: 1.2em;
+    text-align: center;
+}
+
+.stepthink-card-header .menu_button {
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+.stepthink-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 4px 0;
+    min-height: 32px;
+    cursor: pointer;
+}
+
+.stepthink-row input[type="checkbox"] {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.stepthink-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.stepthink-field > label {
+    font-size: 0.85em;
+    opacity: 0.85;
+}
+
+.stepthink-field .text_pole,
+.stepthink-card textarea,
+.stepthink-card input[type="text"],
+.stepthink-card input[type="number"],
+.stepthink-card select {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 8px;
+}
+
+.stepthink-hint {
+    opacity: 0.6;
+    font-size: 0.8em;
+    line-height: 1.35;
+}
+
+.stepthink-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.stepthink-actions .menu_button {
+    flex: 1 1 160px;
+    justify-content: center;
+    margin: 0;
+}
+
+.stepthink-popup-title {
+    margin: 0 0 var(--stepthink-gap);
+    text-align: center;
+}
+
+.stepthink-character-popup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--stepthink-gap);
+    text-align: left;
+}
+
+/* prompt items */
+.stepthink-prompt-item {
+    gap: 8px;
+    margin: 0;
+    padding: 10px;
+    border: 1px solid var(--stepthink-border, var(--SmartThemeBorderColor));
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--SmartThemeShadowColor, #000) 35%, transparent);
+    flex-wrap: nowrap;
+}
+
+.stepthink-prompt-item + .stepthink-prompt-item {
+    margin-top: 8px;
+}
+
+.stepthink-prompt-item .drag-handle {
+    cursor: grab;
+    opacity: 0.6;
+    padding: 4px 6px;
+    touch-action: none;
+}
+
+.stepthink-prompt-item textarea,
+.stepthink-prompt-item input.text_pole {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 8px;
+}
+
+/* advanced block uses the same card but legacy markup inside */
+#stepthink_additional_settings .flex-container:not(.flexFlowRow) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    margin: 0;
+}
+
+#stepthink_additional_settings .flex-container.flexFlowRow {
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+#stepthink_additional_settings .menu_button {
+    align-self: flex-start;
+}
+
+#stepthink_additional_settings label {
+    font-size: 0.88em;
+}
+
+#stepthink_additional_settings label.checkbox_label {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+#stepthink_additional_settings hr {
+    width: 100%;
+    margin: 4px 0;
+}
+
 #stepthink_settings .flex-container,
 [id^="stepthink_character_settings--"] .flex-container {
     min-width: 0;
@@ -130,43 +335,71 @@ body.bubblechat .unbound_thoughts {
     max-width: 100%;
 }
 
+/* ---------- Tablet ---------- */
+
+@media (min-width: 701px) and (max-width: 1024px) {
+    .stepthink-prompt-item textarea {
+        min-height: 7rem;
+    }
+}
+
+/* ---------- Phone ---------- */
+
 @media (max-width: 700px) {
-    #stepthink_settings .inline-drawer-content,
-    [id^="stepthink_character_settings--"] {
-        padding-left: 8px;
-        padding-right: 8px;
+    .stepthink-card {
+        padding: 10px;
+        border-radius: 10px;
     }
 
-    #stepthink_settings .flex-container,
-    [id^="stepthink_character_settings--"] .flex-container {
-        flex-wrap: wrap;
-        row-gap: 6px;
+    .stepthink-row {
+        min-height: 40px;
     }
 
-    #stepthink_settings .flex-container > label,
-    #stepthink_settings .flex-container > span,
-    [id^="stepthink_character_settings--"] .flex-container > label,
-    [id^="stepthink_character_settings--"] .flex-container > span {
-        max-width: 100%;
+    .stepthink-row input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
     }
 
-    #stepthink_settings .thinking_prompt_container,
-    [id^="stepthink_character_settings--"] .thinking_prompt_container {
-        flex-basis: calc(100% - 42px);
+    .stepthink-card .text_pole,
+    .stepthink-card select,
+    .stepthink-card textarea {
+        font-size: 16px;
     }
 
-    #stepthink_settings .thinking_prompt_container .flexFlowRow,
-    [id^="stepthink_character_settings--"] .thinking_prompt_container .flexFlowRow {
-        align-items: stretch;
+    .stepthink-actions .menu_button {
+        flex-basis: 100%;
+        min-height: 40px;
+    }
+
+    .stepthink-card-header .menu_button {
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    .stepthink-prompt-item {
         flex-direction: column;
+        flex-wrap: wrap;
+        padding: 8px;
     }
 
-    #stepthink_settings .thinking_prompt_container input,
-    #stepthink_settings .thinking_prompt_container textarea,
-    [id^="stepthink_character_settings--"] .thinking_prompt_container input,
-    [id^="stepthink_character_settings--"] .thinking_prompt_container textarea {
-        box-sizing: border-box;
+    .stepthink-prompt-item .thinking_prompt_container {
+        flex-basis: auto;
         width: 100%;
+    }
+
+    .stepthink-prompt-item .thinking_prompt_container .flexFlowRow {
+        align-items: stretch;
+        flex-wrap: wrap;
+    }
+
+    .stepthink-prompt-item > .flexFlowColumn:last-child {
+        flex-direction: row;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .stepthink-popup-title {
+        font-size: 1.1em;
     }
 
     .thoughts {
@@ -184,15 +417,12 @@ body.bubblechat .unbound_thoughts {
         flex-wrap: wrap;
     }
 
+    .thought_control_buttons .menu_button {
+        height: 2rem;
+    }
+
     .generated_thought_name,
     .generated_thought {
         overflow-wrap: anywhere;
-    }
-}
-
-@media (min-width: 701px) and (max-width: 1024px) {
-    #stepthink_settings .thinking_prompt_container textarea,
-    [id^="stepthink_character_settings--"] .thinking_prompt_container textarea {
-        min-height: 7rem;
     }
 }

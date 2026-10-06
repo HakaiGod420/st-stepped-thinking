@@ -1,32 +1,34 @@
-<div id="stepthink_character_settings--{{short_name}}">
-    <h3 class="alignContentCenter">{{character_name}} settings</h3>
+<div id="stepthink_character_settings--{{short_name}}" class="stepthink-root stepthink-character-popup">
+    <h3 class="stepthink-popup-title">{{character_name}} settings</h3>
 
-    <div class="flex-container marginTopBot5">
-        <label class="checkbox_label expander"
+    <section class="stepthink-card">
+        <label class="checkbox_label stepthink-row"
                for="stepthink_is_thinking_enabled--{{short_name}}"
                title="Enable Stepped Thinking for this character. If this checkbox is unchecked, the other settings will be ignored, and the thinking process won’t start">
             <input id="stepthink_is_thinking_enabled--{{short_name}}" type="checkbox"/>
-            Enable thinking on each message
+            <span>Enable thinking on each message</span>
         </label>
-    </div>
 
-    <div class="flex-container marginTopBot5">
-        <label class="checkbox_label expander"
+        <label class="checkbox_label stepthink-row"
                for="stepthink_is_mind_reader--{{short_name}}"
                title="This option allows this character to read the thoughts of all other characters">
             <input id="stepthink_is_mind_reader--{{short_name}}" type="checkbox"/>
-            Can read others' thoughts
+            <span>Can read others' thoughts</span>
         </label>
-    </div>
+    </section>
 
-    <div class="flex-container justifySpaceBetween alignItemsCenter">
-    <span title="If the list is not empty, these prompts will be used instead of the default ones for this character. Enabled names must be unique because they are JSON keys in one combined request.">
-        Prompts for thinking (one JSON request):
-    </span>
-        <div id="stepthink_prompt_list_add--{{short_name}}"
-             class="menu_button menu_button_icon fa-solid fa-plus"
-             title="Add prompt"></div>
-    </div>
+    <section class="stepthink-card">
+        <div class="stepthink-card-header">
+            <div class="stepthink-card-title"
+                 title="If the list is not empty, these prompts will be used instead of the default ones for this character. Enabled names must be unique because they are JSON keys in one combined request.">
+                <i class="fa-solid fa-list-check"></i> Thinking prompts
+            </div>
+            <div id="stepthink_prompt_list_add--{{short_name}}"
+                 class="menu_button menu_button_icon fa-solid fa-plus"
+                 title="Add prompt"></div>
+        </div>
+        <small class="stepthink-hint">Replaces the default prompts for this character when not empty.</small>
 
-    <div id="stepthink_prompt_list--{{short_name}}"></div>
+        <div id="stepthink_prompt_list--{{short_name}}"></div>
+    </section>
 </div>

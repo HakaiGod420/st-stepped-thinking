@@ -1,139 +1,143 @@
-<div id="stepthink_settings">
+<div id="stepthink_settings" class="stepthink-root">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
             <b>Stepped Thinking</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <div class="flex-container justifySpaceBetween flexFlowRow">
-                <div class="flex-container marginTopBot5">
-                    <label class="checkbox_label expander" for="stepthink_is_enabled"
-                        title="Trigger thoughts generation every time a new message is generated">
-                        <input id="stepthink_is_enabled" type="checkbox"/>
-                        Enable thinking on each message
-                    </label>
-                </div>
-
-                <div class="flex-container marginTopBot5 indent20p">
-                    <div id="stepthink_is_shutdown" class="menu_button margin0 fa-solid fa-power-off stepthink_mode_embedded"
+            <section class="stepthink-card">
+                <div class="stepthink-card-header">
+                    <div class="stepthink-card-title"><i class="fa-solid fa-brain"></i> General</div>
+                    <div id="stepthink_is_shutdown" class="menu_button menu_button_icon fa-solid fa-power-off stepthink_mode_embedded"
                          title="Completely shut down/turn on the extension, including hiding/revealing already existing thoughts. The page will be reloaded">
                     </div>
                 </div>
-            </div>
 
-            <div class="flex-container marginTopBot5">
-                <label class="checkbox_label expander" for="stepthink_is_goal_enabled"
+                <label class="checkbox_label stepthink-row" for="stepthink_is_enabled"
+                       title="Trigger thoughts generation every time a new message is generated">
+                    <input id="stepthink_is_enabled" type="checkbox"/>
+                    <span>Enable thinking on each message</span>
+                </label>
+
+                <div class="stepthink-field">
+                    <label for="stepthink_mode">Thinking mode</label>
+                    <select id="stepthink_mode" class="text_pole"></select>
+                </div>
+
+                <div class="stepthink-field">
+                    <label for="stepthink_thinking_connection_profile"
+                           title="Thoughts are requested directly from this profile. Your active connection is never switched.">
+                        Thinking connection
+                    </label>
+                    <select id="stepthink_thinking_connection_profile" class="text_pole">
+                        <option value="">Use my active connection (no switching)</option>
+                    </select>
+                    <small class="stepthink-hint">Your active connection stays untouched. The chosen profile is only used for thought requests.</small>
+                </div>
+            </section>
+
+            <section class="stepthink-card">
+                <div class="stepthink-card-header">
+                    <div class="stepthink-card-title"><i class="fa-solid fa-bullseye"></i> Goal</div>
+                </div>
+
+                <label class="checkbox_label stepthink-row" for="stepthink_is_goal_enabled"
                        title="Guide generated thoughts and plans toward the goal below">
                     <input id="stepthink_is_goal_enabled" type="checkbox"/>
-                    Enable goal / scenario guidance
+                    <span>Enable goal / scenario guidance</span>
                 </label>
-            </div>
 
-            <div class="flex-container marginTopBot5">
-                <label for="stepthink_goal"
-                       title="This guides generated thoughts and plans but does not directly change the normal reply prompt">
-                    Goal / direction:
-                </label>
-                <textarea id="stepthink_goal" class="text_pole" rows="3"
-                          placeholder="Example: Become friends with the user"></textarea>
-            </div>
+                <div class="stepthink-field">
+                    <label for="stepthink_goal"
+                           title="This guides generated thoughts and plans but does not directly change the normal reply prompt">
+                        Goal / direction
+                    </label>
+                    <textarea id="stepthink_goal" class="text_pole" rows="3"
+                              placeholder="Example: Become friends with the user"></textarea>
+                </div>
+            </section>
 
-            <div class="flex-container alignItemsCenter">
-                Thinking mode:
-                <select id="stepthink_mode" class="text_pole widthNatural">
-                </select>
-            </div>
+            <section class="stepthink-card">
+                <div class="stepthink-card-header">
+                    <div class="stepthink-card-title"
+                         title="All enabled prompts are sent in one request. The model must return one JSON string value for each unique prompt name.">
+                        <i class="fa-solid fa-list-check"></i> Thinking prompts
+                    </div>
+                    <div id="stepthink_prompt_list_add"
+                         class="menu_button menu_button_icon fa-solid fa-plus"
+                         title="Add prompt"></div>
+                </div>
+                <small class="stepthink-hint">One JSON request. Each enabled prompt needs a unique name.</small>
 
-            <div class="flex-container alignItemsCenter marginTopBot5">
-                Thinking connection:
-                <select id="stepthink_thinking_connection_profile" class="text_pole widthNatural">
-                    <option value="">Use main connection</option>
-                </select>
-            </div>
+                <div id="stepthink_prompt_list"></div>
+            </section>
 
-            <hr/>
+            <section class="stepthink-card">
+                <div class="stepthink-card-header">
+                    <div class="stepthink-card-title"><i class="fa-solid fa-sliders"></i> Prompt content</div>
+                </div>
 
-            <div class="flex-container justifySpaceBetween alignItemsCenter">
-                <span title="All enabled prompts are sent in one request. The model must return one JSON string value for each unique prompt name.">
-                    Prompts for thinking (one JSON request):
-                </span>
-                <div id="stepthink_prompt_list_add"
-                     class="menu_button menu_button_icon fa-solid fa-plus"
-                     title="Add prompt"></div>
-            </div>
-
-            <div id="stepthink_prompt_list"></div>
-
-            <div class="flex-container marginTopBot5">
-                <label class="checkbox_label expander" for="stepthink_is_wian_skipped"
+                <label class="checkbox_label stepthink-row" for="stepthink_is_wian_skipped"
                        title="Omit World Info and Author's Note from thought generation prompts">
                     <input id="stepthink_is_wian_skipped" type="checkbox"/>
-                    Skip WI/AN
+                    <span>Skip WI/AN</span>
                 </label>
-            </div>
 
-            <div class="flex-container marginTopBot5 stepthink_mode_separated">
-                <label class="checkbox_label expander" for="stepthink_is_thoughts_as_system"
+                <label class="checkbox_label stepthink-row stepthink_mode_separated" for="stepthink_is_thoughts_as_system"
                        title="Include character thoughts messages as the System role">
                     <input id="stepthink_is_thoughts_as_system" type="checkbox"/>
-                    Thoughts as System
+                    <span>Thoughts as System</span>
                 </label>
-            </div>
 
-            <div class="flex-container alignItemsCenter marginTopBot5 stepthink_mode_embedded">
-                Role for sending thoughts:
-                <select id="stepthink_sending_thoughts_role" class="text_pole widthNatural">
-                    <option value="0">System</option>
-                    <option value="1">User</option>
-                    <option value="2">Assistant</option>
-                </select>
-            </div>
+                <div class="stepthink-field stepthink_mode_embedded">
+                    <label for="stepthink_sending_thoughts_role">Role for sending thoughts</label>
+                    <select id="stepthink_sending_thoughts_role" class="text_pole">
+                        <option value="0">System</option>
+                        <option value="1">User</option>
+                        <option value="2">Assistant</option>
+                    </select>
+                </div>
 
-            <hr/>
-
-            <div class="flex-container marginTopBot5">
-                <div class="flex-container flex1"
+                <div class="stepthink-field"
                      title="The number of a character's last messages with thoughts that will be included in the generation prompt">
-                    <label for="stepthink_max_thoughts_in_prompt">
-                        Number of last thoughts included in prompt:
-                    </label>
+                    <label for="stepthink_max_thoughts_in_prompt">Number of last thoughts included in prompt</label>
                     <input type="number" id="stepthink_max_thoughts_in_prompt" class="text_pole" min="0"/>
                 </div>
-            </div>
 
-            <div class="flex-container marginTopBot5 stepthink_mode_embedded">
-                <label class="checkbox_label expander" for="stepthink_is_always_include_ongoing_thoughts"
+                <label class="checkbox_label stepthink-row stepthink_mode_embedded" for="stepthink_is_always_include_ongoing_thoughts"
                        title='Whether the thought that is currently being generated will always be included in the prompt without increasing the counter set by the "Number of last thoughts included in prompt" setting'>
                     <input id="stepthink_is_always_include_ongoing_thoughts" type="checkbox"/>
-                    Always include ongoing thoughts
+                    <span>Always include ongoing thoughts</span>
                 </label>
-            </div>
+            </section>
 
-            <hr class="stepthink_mode_embedded"/>
-
-            <div class="flex-container justifySpaceBetween alignItemsCenter">
-                <label for="stepthink_character_settings"
-                       title="You can set up individual settings for selected characters. Click on a character’s name after the character is added to the list to adjust its settings">
-                    Character settings (click on a name to adjust):
-                </label>
-                <div id="stepthink_load_characters"
-                     class="menu_button menu_button_icon fa-solid fa-undo"
-                     title="Reload characters list"></div>
+            <section class="stepthink-card">
+                <div class="stepthink-card-header">
+                    <div class="stepthink-card-title"
+                         title="You can set up individual settings for selected characters. Click on a character’s name after the character is added to the list to adjust its settings">
+                        <i class="fa-solid fa-user-gear"></i> Character settings
+                    </div>
+                    <div id="stepthink_load_characters"
+                         class="menu_button menu_button_icon fa-solid fa-undo"
+                         title="Reload characters list"></div>
+                </div>
+                <small class="stepthink-hint">Click on a name to adjust its settings.</small>
                 <select id="stepthink_character_settings" class="select2_multi_sameline"
                         multiple="multiple"></select>
-            </div>
+            </section>
 
-            <div class="flex-container marginTopBot5">
+            <div class="stepthink-actions">
                 <div id="stepthink_additional_settings_toggle" class="menu_button menu_button_icon">
                     <i class="fa-solid fa-cog"></i>
                     Additional Settings
                 </div>
-                <div id="stepthink_reset_settings" class="menu_button menu_button_icon margin0"
+                <div id="stepthink_reset_settings" class="menu_button menu_button_icon redWarningBG"
                      title="Reset all Stepped Thinking settings, including character-specific settings">
+                    <i class="fa-solid fa-rotate-left"></i>
                     Reset to defaults
                 </div>
             </div>
-            <div id="stepthink_additional_settings" style="display:none;">
+            <div id="stepthink_additional_settings" class="stepthink-card" style="display:none;">
                 <div class="flex-container marginTopBot5">
                     <label class="checkbox_label expander" for="stepthink_is_thoughts_spoiler_open"
                            title="Whether spoilers will be open or closed in new messages. It doesn't affect existing ones">

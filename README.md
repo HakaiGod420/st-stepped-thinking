@@ -93,8 +93,9 @@ Settings` block.
 #### Generation settings
 
 The `Thinking connection` selector can use an existing SillyTavern connection profile for thought generation.
-`Use main connection` leaves the active connection unchanged. When a profile is selected, it is applied only for
-the thought request and the previous connection is restored afterward.
+`Use my active connection` sends the request through whatever connection you already use. When a profile is selected, the request
+goes directly to that profile; your active connection is never switched, so nothing needs to be restored afterward.
+The thinking request is built from the character card, persona and recent chat (World Info is not included in this mode).
 
 `Recent messages for thinking` limits the thought-generation context to the most recent chat messages. It defaults
 to 10 and does not change the existing system prompt, World Info, Author's Note, or thought-prompt handling.

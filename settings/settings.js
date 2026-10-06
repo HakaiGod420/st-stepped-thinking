@@ -70,13 +70,25 @@ export function registerSettingsListeners() {
 
 function renderAvailableConnectionProfiles() {
     const selector = $('#stepthink_thinking_connection_profile');
-    selector.empty().append($('<option>', { value: '', text: 'Use main connection' }));
+    selector.empty().append($('<option>', { value: '', text: 'Use my active connection (no switching)' }));
 
     const profiles = extension_settings.connectionManager?.profiles ?? [];
     profiles
         .filter(profile => profile.name)
         .sort((first, second) => first.name.localeCompare(second.name))
-        .forEach(profile => selector.append($('<option>', { value: profile.name, text: profile.name })));
+        .forEach(profile => selector.append($('<option>', { value: profile.id, text: profile.name })));
+
+    // Older versions stored the profile name; move to the stable id
+    const stored = settings?.thinking_connection_profile;
+    if (stored) {
+        const match = profiles.find(profile => profile.id === stored) ?? profiles.find(profile => profile.name === stored);
+        if (match) {
+            settings.thinking_connection_profile = match.id;
+        } else {
+            selector.append($('<option>', { value: stored, text: `${stored} (missing)` }));
+        }
+        selector.val(settings.thinking_connection_profile);
+    }
 }
 
 /**
@@ -257,6 +269,7 @@ function registerCommonSettingListeners() {
 
     $('#stepthink_mode').on('input', onSwitchThinkingMode);
     $('#stepthink_thinking_connection_profile').on('input', onThinkingConnectionProfileInput);
+    $('#stepthink_settings .inline-drawer-toggle').first().on('click', renderAvailableConnectionProfiles);
     $('#stepthink_reset_settings').on('click', onResetSettings);
 
     $('#stepthink_is_enabled').on('input', onCheckboxInput('is_enabled'));
@@ -865,7 +878,9 @@ class ThinkingPromptSettings {
      */
     remove(id) {
         const arrayIndexToDelete = this.#settings.findIndex(prompt => prompt.id === id);
-        this.#settings.splice(arrayIndexToDelete, 1);
+        if (arrayIndexToDelete !== -1) {
+            this.#settings.splice(arrayIndexToDelete, 1);
+        }
     }
 
     /**
@@ -902,7 +917,7 @@ class ThinkingPromptSettings {
      * @return {number}
      */
     #getLowestFreeId() {
-        const takenIds = this.#settings.map(prompt => prompt.id).sort();
+        const takenIds = this.#settings.map(prompt => prompt.id).sort((first, second) => first - second);
         let freeId = 0;
         for (const takenId of takenIds) {
             if (takenId !== freeId) {
@@ -1090,7 +1105,7 @@ class ThinkingPromptList {
     #renderMainColumnContainer(id) {
         const mainContainer = document.createElement('div');
         mainContainer.setAttribute('id', `stepthink_prompt_item--${this.#promptSettings.owner}--${id}`);
-        mainContainer.classList.add('flex-container', 'marginTopBot5', 'flexFlowRow');
+        mainContainer.classList.add('flex-container', 'marginTopBot5', 'flexFlowRow', 'stepthink-prompt-item');
 
         return mainContainer;
     }
@@ -1149,10 +1164,10 @@ class ThinkingPromptList {
         handle.innerText = '☰';
 
         const nameContainer = document.createElement('div');
-        nameContainer.classList.add('flex-container', 'alignItemsCenter', 'width100p', 'flexFlowRow', 'stepthink_mode_embedded');
+        nameContainer.classList.add('flex-container', 'alignItemsCenter', 'width100p', 'flexFlowRow');
 
         const label = document.createElement('label');
-        label.setAttribute('title', 'A name that will be used as {{prompt_name}} in the thoughts injection template');
+        label.setAttribute('title', 'The unique JSON key for this category; also used as {{prompt_name}} in the thoughts injection template');
         label.innerText = 'Name:';
 
         const name = document.createElement('input');
@@ -1169,11 +1184,7 @@ class ThinkingPromptList {
         idLabel.innerText = 'ID: ' + String(id);
 
         container.append(handle, nameContainer, idLabel);
-        if (settings.mode !== 'embedded') {
-            nameContainer.style.display = 'none';
-        }
-
-        return container;
+                return container;
     }
 
     /**

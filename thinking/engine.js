@@ -1,4 +1,4 @@
-import { getContext } from '../../../../extensions.js';
+import { extension_settings, getContext } from '../../../../extensions.js';
 import {
     event_types,
     eventSource,
@@ -13,7 +13,6 @@ import { is_group_generating } from '../../../../group-chats.js';
 import { findMode, registerThinkingModeListeners } from './mode.js';
 import { registerPromptAdjustmentListeners } from './prompt_adjustment.js';
 import { findChar, getCharIndex } from '../../../../utils.js';
-import { SlashCommandParser } from '../../../../slash-commands/SlashCommandParser.js';
 
 /**
  * @type {{is_enabled: ?boolean, thinking_prompt_ids: ?number[]}}
@@ -230,7 +229,7 @@ export async function stopThinking(textarea) {
  * @return {Promise<void>}
  */
 export async function runNewThoughtsGeneration(textarea, targetPromptIds = null) {
-    if (!generationCaptured()) {
+    if (!await generationCaptured()) {
         return;
     }
     isThinking = true;
@@ -259,7 +258,7 @@ export async function runNewThoughtsGeneration(textarea, targetPromptIds = null)
  * @return {Promise<void>}
  */
 export async function runRefreshGeneratedThoughts(targetThought) {
-    if (!generationCaptured()) {
+    if (!await generationCaptured()) {
         return;
     }
     isThinking = true;
@@ -461,56 +460,98 @@ function validateBatchedPrompts(prompts) {
     }
 }
 
+const MAX_GENERATION_ATTEMPTS = 4;
+
+class ThoughtParseError extends Error {}
+
 /**
  * @param {ThinkingPrompt[]} prompts
  * @return {Promise<Map<string, string>>}
  */
 async function generateCharacterThoughts(prompts) {
     const context = getContext();
-    const characterGoal = getCharacterThinkingGoal();
+    const combinedPrompt = buildCombinedPrompt(prompts);
 
-    const promptInstructions = prompts
-        .map(prompt => `${JSON.stringify(prompt.name)}:\n${prompt.prompt}`)
-        .join('\n\n');
-    const combinedPromptParts = [
-        'Generate one response for each of the following thinking categories.',
-        'Return ONLY a valid JSON object. Do not use markdown fences or any text outside the JSON object.',
-        'The object must contain exactly these category names as keys, with one plain-text string value per key.',
-        'Example format: {"Thoughts":"...","Plans":"..."}',
+    let lastError = null;
+    for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt++) {
+        try {
+            const result = await generateQuietThought(context, combinedPrompt);
+            const parsedThoughts = parseBatchedThoughts(result, prompts);
+
+            const isLengthAboveMinimum = [...parsedThoughts.values()]
+                .every(thought => thought.length >= settings.min_thought_length);
+            if (isLengthAboveMinimum) {
+                return new Map([...parsedThoughts].map(([name, thought]) => [name, sanitizeThought(thought, context)]));
+            }
+
+            lastError = new ThoughtParseError(`A generated thought stayed below the minimum length of ${settings.min_thought_length} characters.`);
+            notifyRetry(`At least one generated thought is below the threshold of ${settings.min_thought_length} characters. Repeating generation...`);
+        } catch (error) {
+            if (!(error instanceof ThoughtParseError)) {
+                throw error;
+            }
+
+            lastError = error;
+            console.warn(`[Stepped Thinking] Attempt ${attempt}/${MAX_GENERATION_ATTEMPTS} failed: ${error.message}`);
+            notifyRetry('The response could not be parsed. Retrying...');
+        }
+
+        if (attempt < MAX_GENERATION_ATTEMPTS) {
+            await generationDelay();
+        }
+    }
+
+    throw lastError;
+}
+
+/**
+ * @param {string} message
+ * @return {void}
+ */
+function notifyRetry(message) {
+    if (settings.is_thinking_popups_enabled) {
+        toastr.warning(message, 'Stepped Thinking', { timeOut: 3000 });
+    }
+}
+
+/**
+ * @param {ThinkingPrompt[]} prompts
+ * @return {string}
+ */
+function buildCombinedPrompt(prompts) {
+    const characterGoal = getCharacterThinkingGoal();
+    const names = prompts.map(prompt => JSON.stringify(prompt.name));
+    const exampleObject = `{${names.map(name => `${name}: "..."`).join(', ')}}`;
+
+    const parts = [
+        'Pause the roleplay. Write the requested internal content for the character, one entry per category listed below.',
     ];
 
     if (characterGoal) {
-        combinedPromptParts.push(
+        parts.push(
             '',
             'Use the following character goal as the guiding objective for every category. Keep all thoughts and plans aligned with it:',
             `<character_goal>\n${characterGoal}\n</character_goal>`,
         );
     }
 
-    combinedPromptParts.push('', promptInstructions);
-    const combinedPrompt = combinedPromptParts.join('\n');
+    parts.push('', 'CATEGORIES AND THEIR INSTRUCTIONS:');
+    for (const prompt of prompts) {
+        parts.push('', `### ${JSON.stringify(prompt.name)}`, prompt.prompt.trim());
+    }
 
-    let result;
-    let parsedThoughts;
-    let isLengthAboveMinimum = true;
-    do {
-        result = await generateQuietThought(context, combinedPrompt);
-        parsedThoughts = parseBatchedThoughts(result, prompts);
-        isLengthAboveMinimum = [...parsedThoughts.values()]
-            .every(thought => thought.length >= settings.min_thought_length);
-        if (!isLengthAboveMinimum) {
-            if (settings.is_thinking_popups_enabled) {
-                toastr.warning(
-                    `At least one generated thought is below the threshold of ${settings.min_thought_length} characters. Repeating generation...`,
-                    'Stepped Thinking',
-                    { timeOut: 3000 }
-                );
-            }
-            await generationDelay();
-        }
-    } while (!isLengthAboveMinimum);
+    parts.push(
+        '',
+        'OUTPUT FORMAT (STRICT, overrides any formatting hints above):',
+        '- Reply with ONE valid JSON object and absolutely nothing else: no markdown code fences, no comments, no explanations, no text before or after it.',
+        `- The object must have exactly these keys: ${names.join(', ')}.`,
+        '- Every value must be a single JSON string. Put line breaks inside a value as \\n and escape double quotes inside a value as \\".',
+        '- Do not nest objects or arrays. Do not add trailing commas.',
+        '- Your reply must start with { and end with }.',
+        `Shape: ${exampleObject}`,
+    );
 
-    return new Map([...parsedThoughts].map(([name, thought]) => [name, sanitizeThought(thought, context)]));
+    return parts.join('\n');
 }
 
 /**
@@ -530,58 +571,193 @@ function getCharacterThinkingGoal() {
  * @return {Map<string, string>}
  */
 function parseBatchedThoughts(result, prompts) {
-    if (typeof result !== 'string') {
-        throw new Error('The thinking response was not text.');
+    if (typeof result !== 'string' || result.trim() === '') {
+        throw new ThoughtParseError('The thinking response was empty.');
     }
 
-    let parsed;
-    try {
-        parsed = JSON.parse(normalizeJsonResponse(result));
-    } catch {
-        throw new Error('The thinking response was not valid JSON. Generation stopped so the category results are not misassigned.');
-    }
+    const cleaned = stripReasoningAndFences(result);
+    const jsonText = extractFirstJsonObject(cleaned);
 
-    if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
-        throw new Error('The thinking response must be a JSON object keyed by category name.');
-    }
-
-    const expectedNames = prompts.map(prompt => prompt.name);
-    const actualNames = Object.keys(parsed);
-    if (actualNames.length !== expectedNames.length || expectedNames.some(name => !Object.prototype.hasOwnProperty.call(parsed, name))) {
-        throw new Error(`The thinking response must contain exactly these category keys: ${expectedNames.join(', ')}.`);
-    }
-
-    for (const name of expectedNames) {
-        if (typeof parsed[name] !== 'string' || parsed[name].trim() === '') {
-            throw new Error(`The thinking response for "${name}" must be a non-empty string.`);
+    if (jsonText === null) {
+        if (prompts.length === 1 && cleaned.trim() !== '' && !cleaned.includes('{')) {
+            return new Map([[prompts[0].name, cleaned.trim()]]);
         }
+        throw new ThoughtParseError('The thinking response did not contain a JSON object.');
     }
 
-    return new Map(expectedNames.map(name => [name, parsed[name]]));
+    const parsed = parseJsonLenient(jsonText);
+    if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
+        throw new ThoughtParseError('The thinking response must be a JSON object keyed by category name.');
+    }
+
+    const normalizeKey = key => String(key).trim().toLowerCase();
+    const actualKeys = new Map(Object.keys(parsed).map(key => [normalizeKey(key), key]));
+
+    const thoughts = new Map();
+    for (const prompt of prompts) {
+        const actualKey = Object.prototype.hasOwnProperty.call(parsed, prompt.name)
+            ? prompt.name
+            : actualKeys.get(normalizeKey(prompt.name));
+        const value = actualKey === undefined ? undefined : coerceThoughtValue(parsed[actualKey]);
+
+        if (value === undefined) {
+            throw new ThoughtParseError(`The thinking response is missing a non-empty value for "${prompt.name}".`);
+        }
+        thoughts.set(prompt.name, value);
+    }
+
+    return thoughts;
 }
 
 /**
- * Models commonly wrap an otherwise valid JSON response in a markdown fence or a short
- * introductory sentence. Remove only those transport wrappers; the parsed value is still
- * required to be an object with exactly the configured category keys.
+ * @param {*} value
+ * @return {string|undefined}
+ */
+function coerceThoughtValue(value) {
+    let text;
+    if (typeof value === 'string') {
+        text = value;
+    } else if (Array.isArray(value)) {
+        text = value.map(item => (typeof item === 'string' ? item : JSON.stringify(item))).join('\n');
+    } else if (typeof value === 'number' || typeof value === 'boolean') {
+        text = String(value);
+    } else if (value && typeof value === 'object') {
+        text = Object.values(value).map(item => String(item)).join('\n');
+    }
+
+    return typeof text === 'string' && text.trim() !== '' ? text.trim() : undefined;
+}
+
+/**
+ * Removes reasoning blocks and markdown fences that models wrap around the JSON.
  *
- * @param {string} result
+ * @param {string} text
  * @return {string}
  */
-function normalizeJsonResponse(result) {
-    const trimmedResult = result.trim();
-    const fencedMatch = trimmedResult.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-    if (fencedMatch) {
-        return fencedMatch[1].trim();
+function stripReasoningAndFences(text) {
+    let result = text
+        .replace(/<(think|thinking|reasoning|thought)>[\s\S]*?<\/\1>/gi, '')
+        .replace(/^[\s\S]*?<\/(think|thinking|reasoning)>/i, '')
+        .trim();
+
+    const fenced = result.match(/```(?:json|JSON)?\s*([\s\S]*?)```/);
+    if (fenced && fenced[1].includes('{')) {
+        result = fenced[1].trim();
+    } else {
+        result = result.replace(/^```(?:json|JSON)?/, '').trim();
     }
 
-    const objectStart = trimmedResult.indexOf('{');
-    const objectEnd = trimmedResult.lastIndexOf('}');
-    if (objectStart > 0 && objectEnd > objectStart) {
-        return trimmedResult.slice(objectStart, objectEnd + 1);
+    return result;
+}
+
+/**
+ * Finds the first balanced {...} block, respecting string literals.
+ *
+ * @param {string} text
+ * @return {?string}
+ */
+function extractFirstJsonObject(text) {
+    const start = text.indexOf('{');
+    if (start === -1) {
+        return null;
     }
 
-    return trimmedResult;
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let i = start; i < text.length; i++) {
+        const char = text[i];
+        if (inString) {
+            if (escaped) {
+                escaped = false;
+            } else if (char === '\\') {
+                escaped = true;
+            } else if (char === '"') {
+                inString = false;
+            }
+            continue;
+        }
+
+        if (char === '"') {
+            inString = true;
+        } else if (char === '{') {
+            depth++;
+        } else if (char === '}') {
+            depth--;
+            if (depth === 0) {
+                return text.slice(start, i + 1);
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @param {string} jsonText
+ * @return {*}
+ */
+function parseJsonLenient(jsonText) {
+    try {
+        return JSON.parse(jsonText);
+    } catch {
+        // fall through to the repair attempt
+    }
+
+    try {
+        return JSON.parse(repairJson(jsonText));
+    } catch {
+        throw new ThoughtParseError('The thinking response was not valid JSON.');
+    }
+}
+
+/**
+ * Escapes raw control characters inside strings and drops trailing commas.
+ *
+ * @param {string} text
+ * @return {string}
+ */
+function repairJson(text) {
+    let output = '';
+    let inString = false;
+    let escaped = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (inString) {
+            if (escaped) {
+                escaped = false;
+                output += char;
+            } else if (char === '\\') {
+                escaped = true;
+                output += char;
+            } else if (char === '"') {
+                inString = false;
+                output += char;
+            } else if (char === '\n') {
+                output += '\\n';
+            } else if (char === '\r') {
+                output += '\\r';
+            } else if (char === '\t') {
+                output += '\\t';
+            } else {
+                output += char;
+            }
+            continue;
+        }
+
+        if (char === '"') {
+            inString = true;
+            output += char;
+        } else if (char === ',' && /^\s*[}\]]/.test(text.slice(i + 1))) {
+            continue;
+        } else {
+            output += char;
+        }
+    }
+
+    return output;
 }
 
 /**
@@ -590,67 +766,137 @@ function normalizeJsonResponse(result) {
  * @return {string}
  */
 function sanitizeThought(thought, context) {
-    if (settings.regexp_to_sanitize.trim() !== '') {
-        const regexp = context.substituteParams(settings.regexp_to_sanitize);
-        return thought.replace(new RegExp(regexp, 'g'), '');
-    }
-
-    return thought;
-}
-
-async function generateQuietThought(context, prompt) {
-    return withThinkingConnection(async () => {
-        const originalChat = context.chat.slice();
-        const messageLimit = settings.thinking_context_messages;
-        if (messageLimit > 0 && originalChat.length > messageLimit) {
-            context.chat.splice(0, originalChat.length - messageLimit);
-        }
-
-        try {
-            return await context.generateQuietPrompt({
-                quietPrompt: prompt,
-                skipWIAN: settings.is_wian_skipped,
-                responseLength: settings.max_response_length,
-                forceChId: currentGenerationPlan.getCharacterId(),
-            });
-        } finally {
-            context.chat.splice(0, context.chat.length, ...originalChat);
-        }
-    });
-}
-
-async function withThinkingConnection(callback) {
-    const profileName = settings.thinking_connection_profile;
-    if (!profileName) {
-        return callback();
-    }
-
-    const profileCommand = SlashCommandParser.commands.profile;
-    if (!profileCommand?.callback) {
-        throw new Error('[Stepped Thinking] Cannot use the selected thinking connection profile because SillyTavern connection profiles are unavailable.');
-    }
-
-    const previousProfile = await profileCommand.callback({}, undefined);
-    if (previousProfile === profileName) {
-        return callback();
+    if (settings.regexp_to_sanitize.trim() === '') {
+        return thought;
     }
 
     try {
-        const appliedProfile = await profileCommand.callback({ await: 'true' }, profileName);
-        if (appliedProfile !== profileName) {
-            throw new Error(`[Stepped Thinking] The selected thinking connection profile "${profileName}" could not be applied.`);
-        }
-
-        return await callback();
-    } finally {
-        try {
-            await profileCommand.callback({ await: 'true' }, previousProfile);
-        } catch (error) {
-            console.error('[Stepped Thinking] Failed to restore the main connection after thought generation', error);
-            toastr.error('Failed to restore the main connection after thought generation', 'Stepped Thinking');
-            throw error;
-        }
+        const regexp = context.substituteParams(settings.regexp_to_sanitize);
+        return thought.replace(new RegExp(regexp, 'g'), '').trim();
+    } catch (error) {
+        console.warn('[Stepped Thinking] Invalid sanitizing regexp, skipping it', error);
+        return thought;
     }
+}
+
+/**
+ * @return {?object}
+ */
+function findThinkingProfile() {
+    const selected = settings.thinking_connection_profile;
+    if (!selected) {
+        return null;
+    }
+
+    const profiles = extension_settings.connectionManager?.profiles ?? [];
+    const profile = profiles.find(item => item.id === selected) ?? profiles.find(item => item.name === selected);
+    if (!profile) {
+        throw new Error(`The selected thinking connection profile "${selected}" no longer exists. Choose another one in the Stepped Thinking settings.`);
+    }
+
+    return profile;
+}
+
+/**
+ * @param {object} context
+ * @param {string} prompt
+ * @return {Promise<string>}
+ */
+async function generateQuietThought(context, prompt) {
+    const profile = findThinkingProfile();
+    if (profile) {
+        return await requestThoughtViaProfile(context, profile, prompt);
+    }
+
+    // The main connection is used as is, nothing is switched.
+    const originalChat = context.chat.slice();
+    const messageLimit = settings.thinking_context_messages;
+    if (messageLimit > 0 && originalChat.length > messageLimit) {
+        context.chat.splice(0, originalChat.length - messageLimit);
+    }
+
+    try {
+        return await context.generateQuietPrompt({
+            quietPrompt: prompt,
+            skipWIAN: settings.is_wian_skipped,
+            responseLength: settings.max_response_length,
+            forceChId: currentGenerationPlan.getCharacterId(),
+        });
+    } finally {
+        context.chat.splice(0, context.chat.length, ...originalChat);
+    }
+}
+
+/**
+ * Sends the request straight to the chosen connection profile without touching the user's active connection.
+ *
+ * @param {object} context
+ * @param {object} profile
+ * @param {string} prompt
+ * @return {Promise<string>}
+ */
+async function requestThoughtViaProfile(context, profile, prompt) {
+    const service = context.ConnectionManagerRequestService;
+    if (!service?.sendRequest) {
+        throw new Error('SillyTavern connection profiles are unavailable. Enable the Connection Profiles extension or update SillyTavern.');
+    }
+
+    const maxTokens = settings.max_response_length > 0 ? settings.max_response_length : 2048;
+    const messages = buildProfileMessages(context, prompt);
+
+    const response = await service.sendRequest(profile.id, messages, maxTokens, {
+        stream: false,
+        extractData: true,
+        includePreset: true,
+        includeInstruct: true,
+    });
+
+    return typeof response === 'string' ? response : response?.content;
+}
+
+/**
+ * @param {object} context
+ * @param {string} prompt
+ * @return {{role: string, content: string}[]}
+ */
+function buildProfileMessages(context, prompt) {
+    const characterId = Number(currentGenerationPlan.getCharacterId());
+    const character = context.characters?.[characterId];
+    const userName = context.name1 || 'User';
+    const characterName = character?.name || context.name2 || 'Character';
+
+    const sections = [];
+    if (character) {
+        const card = [
+            ['Description', character.description],
+            ['Personality', character.personality],
+            ['Scenario', character.scenario],
+        ]
+            .filter(([, value]) => typeof value === 'string' && value.trim() !== '')
+            .map(([title, value]) => `${title}: ${value.trim()}`);
+        sections.push(`You are ${characterName}.\n${card.join('\n')}`);
+    }
+
+    const persona = context.powerUserSettings?.persona_description;
+    if (typeof persona === 'string' && persona.trim() !== '') {
+        sections.push(`${userName} (the user) is: ${persona.trim()}`);
+    }
+
+    const messageLimit = settings.thinking_context_messages;
+    let history = context.chat.filter(message => !message.is_system && typeof message.mes === 'string' && message.mes.trim() !== '');
+    if (messageLimit > 0) {
+        history = history.slice(-messageLimit);
+    }
+    if (history.length > 0) {
+        sections.push('Recent chat:\n' + history.map(message => `${message.name}: ${message.mes.trim()}`).join('\n\n'));
+    }
+
+    sections.push(prompt);
+
+    return [
+        { role: 'system', content: substituteParams(`You are a roleplay engine that writes a character's hidden inner state as strict JSON. You never add commentary outside the JSON.`) },
+        { role: 'user', content: substituteParams(sections.join('\n\n'), userName, characterName) },
+    ];
 }
 
 /**
