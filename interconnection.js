@@ -30,6 +30,7 @@ export async function generationCaptured() {
     }
 
     if (capturedBy === NO_CAPTURES) {
+        capturedBy = extensionName;
         await eventSource.emit(generationMutexEvents.MUTEX_CAPTURED, {extension_name: extensionName});
         return true;
     }
