@@ -519,13 +519,24 @@ function notifyRetry(message) {
  * @return {string}
  */
 function buildCombinedPrompt(prompts) {
+    const context = getContext();
     const characterGoal = getCharacterThinkingGoal();
     const names = prompts.map(prompt => JSON.stringify(prompt.name));
     const exampleObject = `{${names.map(name => `${name}: "..."`).join(', ')}}`;
 
+    const messageLimit = settings.thinking_context_messages;
+    const historyLength = messageLimit > 0 ? Math.min(messageLimit, context.chat.length) : context.chat.length;
+
     const parts = [
         'Pause the roleplay. Write the requested internal content for the character, one entry per category listed below.',
     ];
+
+    if (historyLength > 0 && historyLength < context.chat.length) {
+        parts.push(
+            '',
+            `NOTE: You have access to only the last ${historyLength} messages of the conversation. Base the character goal and all thoughts on this limited context only.`,
+        );
+    }
 
     if (characterGoal) {
         parts.push(
