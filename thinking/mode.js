@@ -1866,11 +1866,13 @@ export class EmbeddedThoughtsUI {
             );
             this.#renderHidingState(thoughtsContainer, thoughtsGeneration.is_hidden);
             for (const thought of thoughtsGeneration.thoughts) {
-                this._thoughtUi.addThoughtToContainer(
-                    this.#findThoughtItemsContainer(thoughtsContainer),
-                    thoughtsGeneration.thoughts_id,
-                    thought
-                );
+                if (thought.thinkingPrompt.is_visible !== false) {
+                    this._thoughtUi.addThoughtToContainer(
+                        this.#findThoughtItemsContainer(thoughtsContainer),
+                        thoughtsGeneration.thoughts_id,
+                        thought
+                    );
+                }
             }
 
             messageElement.before(thoughtsContainer);
@@ -2243,7 +2245,37 @@ export class EmbeddedThoughtsThoughtElementUI {
      */
     #insertThoughtText(thoughtTextElement, text) {
         const context = getContext();
-        thoughtTextElement.innerHTML = context.messageFormatting(text, '', false, false, -1);
+        const formattedText = this.#formatThoughtAsBulletPoints(text);
+        thoughtTextElement.innerHTML = context.messageFormatting(formattedText, '', false, false, -1);
+    }
+
+    #formatThoughtAsBulletPoints(text) {
+        const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        let result = [];
+        let inList = false;
+
+        for (const line of lines) {
+            if (line.startsWith('-') || line.startsWith('•') || /^\d+\./.test(line)) {
+                if (!inList) {
+                    result.push('<ul class="thought-bullet-list">');
+                    inList = true;
+                }
+                const bulletContent = line.replace(/^[-•]\s*/, '').replace(/^\d+\.\s*/, '');
+                result.push(`<li>${bulletContent}</li>`);
+            } else if (line) {
+                if (inList) {
+                    result.push('</ul>');
+                    inList = false;
+                }
+                result.push(`<p>${line}</p>`);
+            }
+        }
+
+        if (inList) {
+            result.push('</ul>');
+        }
+
+        return result.join('\n');
     }
 
     /**

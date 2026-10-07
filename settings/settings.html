@@ -59,6 +59,21 @@
 
             <section class="stepthink-card">
                 <div class="stepthink-card-header">
+                    <div class="stepthink-card-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Global Thought Rules</div>
+                </div>
+
+                <div class="stepthink-field">
+                    <label for="stepthink_global_thought_rules"
+                           title="These rules are injected into all thinking prompts to adapt responses to the current scene, character, and player. Use {{scene}}, {{char}}, {{user}} macros for dynamic content.">
+                        Adaptation rules (optional)
+                    </label>
+                    <textarea id="stepthink_global_thought_rules" class="text_pole" rows="3"
+                              placeholder="Example: Adapt all responses to the current {{scene}}, considering {{char}}'s personality and {{user}}'s preferences"></textarea>
+                </div>
+            </section>
+
+            <section class="stepthink-card">
+                <div class="stepthink-card-header">
                     <div class="stepthink-card-title"
                          title="All enabled prompts are sent in one request. The model must return one JSON string value for each unique prompt name.">
                         <i class="fa-solid fa-list-check"></i> Thinking prompts

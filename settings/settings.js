@@ -178,6 +178,7 @@ const defaultCommonSettings = {
     'is_enabled': true,
     'is_goal_enabled': false,
     'goal': '',
+    'global_thought_rules': '',
     'is_wian_skipped': false,
     'is_thinking_popups_enabled': true,
     'is_thoughts_spoiler_open': false,
@@ -240,6 +241,7 @@ function loadCommonSettings() {
     $('#stepthink_is_enabled').prop('checked', settings.is_enabled).trigger('input');
     $('#stepthink_is_goal_enabled').prop('checked', settings.is_goal_enabled).trigger('input');
     $('#stepthink_goal').val(settings.goal);
+    $('#stepthink_global_thought_rules').val(settings.global_thought_rules);
     $('#stepthink_is_wian_skipped').prop('checked', settings.is_wian_skipped).trigger('input');
     $('#stepthink_is_thoughts_spoiler_open').prop('checked', settings.is_thoughts_spoiler_open).trigger('input');
     $('#stepthink_is_thinking_popups_enabled').prop('checked', settings.is_thinking_popups_enabled).trigger('input');
@@ -275,6 +277,7 @@ function registerCommonSettingListeners() {
     $('#stepthink_is_enabled').on('input', onCheckboxInput('is_enabled'));
     $('#stepthink_is_goal_enabled').on('input', onCheckboxInput('is_goal_enabled'));
     $('#stepthink_goal').on('input', onTextareaInput('goal'));
+    $('#stepthink_global_thought_rules').on('input', onTextareaInput('global_thought_rules'));
     $('#stepthink_is_shutdown').on('input', onCheckboxInput('is_shutdown'));
     $('#stepthink_is_wian_skipped').on('input', onCheckboxInput('is_wian_skipped'));
     $('#stepthink_is_thoughts_spoiler_open').on('input', onCheckboxInput('is_thoughts_spoiler_open'));
@@ -739,7 +742,8 @@ function isSeveralCharactersWithTheSameName(name) {
  * @property {number} id - synthetic key
  * @property {string} name - name of the prompt (used only in the embedded thoughts mode)
  * @property {string} prompt - the prompt to be injected in the end of the main prompt
- * @property {boolean} is_enabled - whether the prompt will be used or not
+ * @property {boolean} is_enabled - whether the prompt will be generated or not
+ * @property {boolean} is_visible - whether the generated thought will be shown in chat or not
  */
 
 /**
@@ -761,6 +765,7 @@ const defaultThinkingPromptSettings = {
             '- I want to ask Adam directly, but I am afraid to hear a lie.\n' +
             '- Maybe I am just too hypocritical?',
         'is_enabled': true,
+        'is_visible': true,
     }, {
         'id': 1,
         'name': 'Plans',
@@ -776,6 +781,7 @@ const defaultThinkingPromptSettings = {
             '3. Try to hurt Eve to make her lose her temper.\n' +
             '4. In the end, try to get Adam\'s attention back to myself.',
         'is_enabled': true,
+        'is_visible': true,
     }],
 };
 
@@ -827,7 +833,7 @@ class ThinkingPromptSettings {
      */
     push(name, prompt, isEnabled) {
         const id = this.#getLowestFreeId();
-        this.#settings.push({ id: id, name: name, prompt: prompt, is_enabled: isEnabled });
+        this.#settings.push({ id: id, name: name, prompt: prompt, is_enabled: isEnabled, is_visible: true });
 
         return id;
     }
@@ -850,6 +856,16 @@ class ThinkingPromptSettings {
     updateIsEnabled(id, isEnabled) {
         const setting = this.getSettingBy(id);
         setting.is_enabled = isEnabled;
+    }
+
+    /**
+     * @param {number} id
+     * @param {boolean} isVisible
+     * @return {void}
+     */
+    updateIsVisible(id, isVisible) {
+        const setting = this.getSettingBy(id);
+        setting.is_visible = isVisible;
     }
 
     /**
@@ -1032,6 +1048,20 @@ class ThinkingPromptList {
     /**
      * @return {(function(): void)}
      */
+    onPromptItemVisibilityChange() {
+        return (event) => {
+            const id = Number(event.target.getAttribute('data-id'));
+            const value = event.target.checked;
+
+            this.#promptSettings.updateIsVisible(id, value);
+
+            saveSettingsDebounced();
+        };
+    }
+
+    /**
+     * @return {(function(): void)}
+     */
     onPromptItemRename() {
         return (event) => {
             const id = Number(event.target.getAttribute('data-id'));
@@ -1200,11 +1230,20 @@ class ThinkingPromptList {
         const isEnabledButton = document.createElement('input');
         isEnabledButton.setAttribute('data-id', String(id));
         isEnabledButton.setAttribute('type', 'checkbox');
-        isEnabledButton.setAttribute('title', 'Enable prompt');
+        isEnabledButton.setAttribute('title', 'Generate this prompt');
         if (currentSetting.is_enabled !== false) {
             isEnabledButton.setAttribute('checked', 'checked');
         }
         isEnabledButton.addEventListener('input', this.onPromptItemEnable());
+
+        const isVisibleButton = document.createElement('input');
+        isVisibleButton.setAttribute('data-id', String(id));
+        isVisibleButton.setAttribute('type', 'checkbox');
+        isVisibleButton.setAttribute('title', 'Show in chat');
+        if (currentSetting.is_visible !== false) {
+            isVisibleButton.setAttribute('checked', 'checked');
+        }
+        isVisibleButton.addEventListener('input', this.onPromptItemVisibilityChange());
 
         const removeButton = document.createElement('div');
         removeButton.setAttribute('data-id', String(id));
@@ -1212,7 +1251,7 @@ class ThinkingPromptList {
         removeButton.classList.add('menu_button', 'menu_button_icon', 'fa-solid', 'fa-trash', 'redWarningBG');
         removeButton.addEventListener('click', this.onPromptItemRemove());
 
-        buttonsContainer.append(isEnabledButton, removeButton);
+        buttonsContainer.append(isEnabledButton, isVisibleButton, removeButton);
 
         return buttonsContainer;
     }

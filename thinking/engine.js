@@ -544,6 +544,7 @@ function notifyRetry(message) {
 function buildCombinedPrompt(prompts) {
     const context = getContext();
     const characterGoal = getCharacterThinkingGoal();
+    const globalThoughtRules = getGlobalThoughtRules();
     const names = prompts.map(prompt => JSON.stringify(prompt.name));
     const exampleObject = `{${names.map(name => `${name}: "..."`).join(', ')}}`;
 
@@ -558,6 +559,14 @@ function buildCombinedPrompt(prompts) {
         parts.push(
             '',
             `NOTE: You have access to only the last ${historyLength} messages of the conversation. Base the character goal and all thoughts on this limited context only.`,
+        );
+    }
+
+    if (globalThoughtRules) {
+        parts.push(
+            '',
+            '[GLOBAL ADAPTATION RULES - APPLY TO ALL RESPONSES]',
+            globalThoughtRules,
         );
     }
 
@@ -614,6 +623,30 @@ function getCharacterThinkingGoal() {
     }
 
     return settings.goal.trim();
+}
+
+/**
+ * @return {string}
+ */
+function getGlobalThoughtRules() {
+    if (typeof settings.global_thought_rules !== 'string') {
+        return '';
+    }
+
+    const rules = settings.global_thought_rules.trim();
+    if (rules === '') {
+        return '';
+    }
+
+    const context = getContext();
+    const character = context.characters[context.characterId];
+    const user = context.name;
+    const scene = context.chatMetadata?.scenario || '';
+
+    return rules
+        .replace(/\{\{scene\}\}/g, scene)
+        .replace(/\{\{char\}\}/g, character?.name || 'Character')
+        .replace(/\{\{user\}\}/g, user || 'User');
 }
 
 /**
