@@ -479,3 +479,31 @@ body.bubblechat .unbound_thoughts {
 .generated_thought .thought-bullet-list {
     margin: 4px 0;
 }
+
+/* Toggle button labels for prompts */
+.stepthink-toggle-buttons {
+    gap: 8px;
+}
+
+.stepthink-toggle-label {
+    font-size: 0.85em;
+    white-space: nowrap;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: var(--SmartThemeBotMesBlurTintColor, rgba(0, 0, 0, 0.05));
+    margin: 0;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.stepthink-toggle-label:hover {
+    background-color: var(--SmartThemeBotMesColor, rgba(0, 0, 0, 0.1));
+}
+
+.stepthink-toggle-label input {
+    margin-right: 4px;
+}
+
+.stepthink-toggle-label span {
+    user-select: none;
+}

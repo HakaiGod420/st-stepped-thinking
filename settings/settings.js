@@ -1225,25 +1225,41 @@ class ThinkingPromptList {
         const currentSetting = this.#promptSettings.getSettingBy(id);
 
         const buttonsContainer = document.createElement('div');
-        buttonsContainer.classList.add('flex-container', 'alignItemsCenter', 'justifyCenter', 'flexFlowColumn');
+        buttonsContainer.classList.add('flex-container', 'alignItemsCenter', 'justifyCenter', 'flexFlowColumn', 'stepthink-toggle-buttons');
+
+        const isEnabledLabel = document.createElement('label');
+        isEnabledLabel.classList.add('checkbox_label', 'stepthink-toggle-label');
+        isEnabledLabel.setAttribute('title', 'Generate this prompt or skip it');
 
         const isEnabledButton = document.createElement('input');
         isEnabledButton.setAttribute('data-id', String(id));
         isEnabledButton.setAttribute('type', 'checkbox');
-        isEnabledButton.setAttribute('title', 'Generate this prompt');
         if (currentSetting.is_enabled !== false) {
             isEnabledButton.setAttribute('checked', 'checked');
         }
         isEnabledButton.addEventListener('input', this.onPromptItemEnable());
 
+        const isEnabledText = document.createElement('span');
+        isEnabledText.textContent = 'Generate';
+
+        isEnabledLabel.append(isEnabledButton, isEnabledText);
+
+        const isVisibleLabel = document.createElement('label');
+        isVisibleLabel.classList.add('checkbox_label', 'stepthink-toggle-label');
+        isVisibleLabel.setAttribute('title', 'Show result in chat or keep it hidden');
+
         const isVisibleButton = document.createElement('input');
         isVisibleButton.setAttribute('data-id', String(id));
         isVisibleButton.setAttribute('type', 'checkbox');
-        isVisibleButton.setAttribute('title', 'Show in chat');
         if (currentSetting.is_visible !== false) {
             isVisibleButton.setAttribute('checked', 'checked');
         }
         isVisibleButton.addEventListener('input', this.onPromptItemVisibilityChange());
+
+        const isVisibleText = document.createElement('span');
+        isVisibleText.textContent = 'Show';
+
+        isVisibleLabel.append(isVisibleButton, isVisibleText);
 
         const removeButton = document.createElement('div');
         removeButton.setAttribute('data-id', String(id));
@@ -1251,7 +1267,7 @@ class ThinkingPromptList {
         removeButton.classList.add('menu_button', 'menu_button_icon', 'fa-solid', 'fa-trash', 'redWarningBG');
         removeButton.addEventListener('click', this.onPromptItemRemove());
 
-        buttonsContainer.append(isEnabledButton, isVisibleButton, removeButton);
+        buttonsContainer.append(isEnabledLabel, isVisibleLabel, removeButton);
 
         return buttonsContainer;
     }
